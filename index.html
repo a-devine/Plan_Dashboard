@@ -534,7 +534,96 @@
             });
         }
 
+
+        function parseNumber(value, defaultValue = 0) {
+            if (value === null || value === undefined || value === '') {
+                return defaultValue;
+            }
+
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                return value;
+            }
+
+            const normalized = String(value)
+                .replace(/[$,\s]/g, '')
+                .replace(/^\((.*)\)$/, '-$1');
+            const parsed = Number.parseFloat(normalized);
+            return Number.isFinite(parsed) ? parsed : defaultValue;
+        }
+
+        function parseCsvLine(line) {
+            const cells = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    cells.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+
+            cells.push(current.trim());
+            return cells;
+        }
+
+        function parseCsvData(csvText) {
+            const lines = csvText
+                .split(/\r?\n/)
+                .map(line => line.trim())
+                .filter(Boolean);
+
+            if (lines.length < 2) {
+                throw new Error('CSV appears to be empty or has no data rows');
+            }
+
+            const headers = parseCsvLine(lines[0]).map((header, index) => header || `Column ${index + 1}`);
+            const rows = lines.slice(1).map(line => {
+                const values = parseCsvLine(line);
+                const row = {};
+                headers.forEach((header, index) => {
+                    row[header] = values[index] !== undefined ? values[index] : '';
+                });
+                return row;
+            });
+
+            return { headers, data: rows };
+        }
+
         async function readExcelFile(file) {
+            const isCsv = file.name.toLowerCase().endsWith('.csv');
+
+            if (isCsv) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const csvText = e.target.result;
+                            resolve(parseCsvData(csvText));
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    reader.onerror = () => reject(new Error('Failed to read CSV file'));
+                    reader.readAsText(file);
+                });
+            }
+
+            if (typeof XLSX === 'undefined') {
+                throw new Error('Excel parser did not load. Please refresh the page and try again, or upload CSV instead');
+            }
+
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 
@@ -555,7 +644,7 @@
                             throw new Error('File appears to be empty or has no data rows');
                         }
                         
-                        const headers = jsonData[0];
+                        const headers = jsonData[0].map((header, index) => header || `Column ${index + 1}`);
                         const rows = jsonData.slice(1).map(row => {
                             const obj = {};
                             headers.forEach((header, index) => {
@@ -582,16 +671,16 @@
                 const processed = { ...item };
                 
                 // Extract numeric values - handle various column name formats
-                const onHand = parseFloat(item['Total On Hand'] || item['Quantity On Hand'] || 0);
-                const secondary = parseFloat(item['On Hand Secondary'] || 0);
-                const openPO = parseFloat(item['Quantity On P.O.'] || item['Quantity On PO'] || 0);
-                const committed = parseFloat(item['Committed Quantity'] || 0);
-                const available = parseFloat(item['Quantity Available'] || 0);
-                const monthlyDemand = parseFloat(item['Average Usage'] || 0);
-                const annualUsage = parseFloat(item['Previous 12 Mo Usage'] || 0);
-                const leadTimeDays = parseFloat(item['Leadtime'] || item['Lead Time'] || 14);
-                const rop = parseFloat(item['Reorder Point'] || 0);
-                const moq = parseFloat(item['MRQ (Min Release Qty)'] || item['MRQ'] || 0);
+                const onHand = parseNumber(item['Total On Hand'] || item['Quantity On Hand'] || 0);
+                const secondary = parseNumber(item['On Hand Secondary'] || 0);
+                const openPO = parseNumber(item['Quantity On P.O.'] || item['Quantity On PO'] || 0);
+                const committed = parseNumber(item['Committed Quantity'] || 0);
+                const available = parseNumber(item['Quantity Available'] || 0);
+                const monthlyDemand = parseNumber(item['Average Usage'] || 0);
+                const annualUsage = parseNumber(item['Previous 12 Mo Usage'] || 0);
+                const leadTimeDays = parseNumber(item['Leadtime'] || item['Lead Time'] || 14);
+                const rop = parseNumber(item['Reorder Point'] || 0);
+                const moq = parseNumber(item['MRQ (Min Release Qty)'] || item['MRQ'] || 0);
 
                 // Calculate metrics
                 const dailyDemand = monthlyDemand / 30.4;
@@ -1030,9 +1119,9 @@
             
             data.forEach(item => {
                 const metrics = item.calculatedMetrics;
-                const available = parseFloat(item['Quantity Available'] || 0);
-                const secondary = parseFloat(item['On Hand Secondary'] || 0);
-                const openPO = parseFloat(item['Quantity On P.O.'] || item['Quantity On PO'] || 0);
+                const available = parseNumber(item['Quantity Available'] || 0);
+                const secondary = parseNumber(item['On Hand Secondary'] || 0);
+                const openPO = parseNumber(item['Quantity On P.O.'] || item['Quantity On PO'] || 0);
                 
                 if (available < 0) {
                     qualityIssues.negativeAvailable.push(item);
@@ -1050,8 +1139,8 @@
                     qualityIssues.excessInventory.push(item);
                 }
                 
-                const monthlyDemand = parseFloat(item['Average Usage'] || 0);
-                const annualUsage = parseFloat(item['Previous 12 Mo Usage'] || 0);
+                const monthlyDemand = parseNumber(item['Average Usage'] || 0);
+                const annualUsage = parseNumber(item['Previous 12 Mo Usage'] || 0);
                 const avgMonthly = annualUsage / 12;
                 
                 if (monthlyDemand > avgMonthly * 3) {
