@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raynor Planning Intelligence Dashboard</title>
+    <!-- Add SheetJS library for Excel processing -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .controls h2 {
+            margin-bottom: 1rem;
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+
+        .file-upload {
+            margin-bottom: 1rem;
+        }
+
+        .file-upload label {
+            display: inline-block;
+            padding: 0.6rem 1.2rem;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .file-upload label:hover {
+            background: #5568d3;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-name {
+            display: inline-block;
+            margin-left: 1rem;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        button {
+            padding: 0.7rem 1.5rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 0.8rem 1.5rem;
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .supplier-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .supplier-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e1e8ed;
+            margin-bottom: 1rem;
+        }
+
+        .supplier-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .urgency-badge {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .urgency-critical {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .urgency-high {
+            background: #e67e22;
+            color: white;
+        }
+
+        .urgency-medium {
+            background: #f39c12;
+            color: white;
+        }
+
+        .urgency-low {
+            background: #27ae60;
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .confidence-score {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .confidence-high {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .confidence-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .confidence-low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-order {
+            background: #667eea;
+            color: white;
+        }
+
+        .action-expedite {
+            background: #e67e22;
+            color: white;
+        }
+
+        .action-review {
+            background: #f39c12;
+            color: white;
+        }
+
+        .action-none {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .signal-tag {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            margin: 0.2rem;
+            background: #ecf0f1;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .signal-critical {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .signal-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .signal-info {
+            background: #3498db;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .empty-state h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .export-btn {
+            padding: 0.5rem 1rem;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .export-btn:hover {
+            background: #229954;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Raynor Planning Intelligence Dashboard</h1>
+        <p>Stockout Prevention | Order Decision Support | Supplier Management</p>
+    </div>
+
+    <div class="container">
+        <!-- File Upload Controls -->
+        <div class="controls">
+            <h2>📁 Data Upload</h2>
+            <div class="file-upload">
+                <label for="buyingSheet">
+                    📊 Upload Buying Sheet (Excel or CSV)
+                </label>
+                <input type="file" id="buyingSheet" accept=".csv,.xlsx,.xls">
+                <span class="file-name" id="buyingFileName">No file selected</span>
+            </div>
+            <button id="processBtn" disabled>🚀 Process Data & Generate Dashboard</button>
+            <div id="errorMessage"></div>
+        </div>
+
+        <!-- Dashboard Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="control-tower">🎯 Control Tower</div>
+            <div class="tab" data-tab="order-today">📋 Order Today</div>
+            <div class="tab" data-tab="supplier-urgency">⚡ Supplier Urgency</div>
+            <div class="tab" data-tab="stockout-risk">⚠️ Stockout Risk</div>
+            <div class="tab" data-tab="data-quality">🔍 Data Quality</div>
+        </div>
+
+        <!-- Control Tower Tab -->
+        <div class="tab-content active" id="control-tower">
+            <div class="empty-state">
+                <h3>Welcome to Raynor Planning Intelligence</h3>
+                <p>Upload your Buying Sheet (Excel or CSV) to begin analysis.</p>
+                <p style="margin-top: 1rem;">The dashboard will automatically:</p>
+                <ul style="list-style: none; margin-top: 1rem; line-height: 2;">
+                    <li>✅ Calculate Decision Confidence scores</li>
+                    <li>✅ Rank suppliers by urgency</li>
+                    <li>✅ Identify stockout risks with lead time exposure</li>
+                    <li>✅ Flag data quality issues</li>
+                    <li>✅ Recommend specific order quantities</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Order Today Tab -->
+        <div class="tab-content" id="order-today">
+            <div class="empty-state">
+                <h3>Order Today Dashboard</h3>
+                <p>This section will show items requiring immediate action with recommended quantities.</p>
+            </div>
+        </div>
+
+        <!-- Supplier Urgency Tab -->
+        <div class="tab-content" id="supplier-urgency">
+            <div class="empty-state">
+                <h3>Supplier Urgency Analysis</h3>
+                <p>Suppliers will be ranked by risk impact and urgency score.</p>
+            </div>
+        </div>
+
+        <!-- Stockout Risk Tab -->
+        <div class="tab-content" id="stockout-risk">
+            <div class="empty-state">
+                <h3>Stockout Risk Calendar</h3>
+                <p>Items filtered by calculated stockout dates and lead time exposure.</p>
+            </div>
+        </div>
+
+        <!-- Data Quality Tab -->
+        <div class="tab-content" id="data-quality">
+            <div class="empty-state">
+                <h3>Data Quality Report</h3>
+                <p>Confidence scoring and data integrity checks will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // File upload handler
+        document.getElementById('buyingSheet').addEventListener('change', (e) => {
+            const fileName = e.target.files[0]?.name || 'No file selected';
+            document.getElementById('buyingFileName').textContent = fileName;
+            document.getElementById('processBtn').disabled = !e.target.files.length;
+            document.getElementById('errorMessage').innerHTML = '';
+        });
+
+        // Process button handler
+        document.getElementById('processBtn').addEventListener('click', async () => {
+            const buyingFile = document.getElementById('buyingSheet').files[0];
+
+            if (!buyingFile) {
+                showError('Please upload a Buying Sheet first.');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const data = await readExcelFile(buyingFile);
+                const processedData = processData(data);
+                
+                generateControlTower(processedData);
+                generateOrderToday(processedData);
+                generateSupplierUrgency(processedData);
+                generateStockoutRisk(processedData);
+                generateDataQuality(processedData);
+
+            } catch (error) {
+                console.error('Error processing data:', error);
+                showError('Error processing file: ' + error.message + '. Please check the file format.');
+            }
+        });
+
+        function showError(message) {
+            document.getElementById('errorMessage').innerHTML = `
+                <div class="error-message">${message}</div>
+            `;
+        }
+
+        function showLoading() {
+            const tabs = ['control-tower', 'order-today', 'supplier-urgency', 'stockout-risk', 'data-quality'];
+            tabs.forEach(tabId => {
+                const tab = document.getElementById(tabId);
+                tab.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Processing data and calculating decision intelligence...</p>
+                    </div>
+                `;
+            });
+        }
+
+        async function readExcelFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        // Try to find the Buying sheet or use first sheet
+                        let sheetName = workbook.SheetNames.find(name => 
+                            name.toLowerCase().includes('buying') || name.toLowerCase() === 's&d'
+                        ) || workbook.SheetNames[0];
+                        
+                        const worksheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        
+                        if (jsonData.length < 2) {
+                            throw new Error('File appears to be empty or has no data rows');
+                        }
+                        
+                        const headers = jsonData[0];
+                        const rows = jsonData.slice(1).map(row => {
+                            const obj = {};
+                            headers.forEach((header, index) => {
+                                obj[header] = row[index] !== undefined ? row[index] : '';
+                            });
+                            return obj;
+                        });
+                        
+                        resolve({ headers, data: rows });
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function processData(fileData) {
+            const { headers, data } = fileData;
+            
+            const processedItems = data.map(item => {
+                const processed = { ...item };
+                
+                // Extract numeric values - handle various column name formats
+                const onHand = parseFloat(item['Total On Hand'] || item['Quantity On Hand'] || 0);
+                const secondary = parseFloat(item['On Hand Secondary'] || 0);
+                const openPO = parseFloat(item['Quantity On P.O.'] || item['Quantity On PO'] || 0);
+                const committed = parseFloat(item['Committed Quantity'] || 0);
+                const available = parseFloat(item['Quantity Available'] || 0);
+                const monthlyDemand = parseFloat(item['Average Usage'] || 0);
+                const annualUsage = parseFloat(item['Previous 12 Mo Usage'] || 0);
+                const leadTimeDays = parseFloat(item['Leadtime'] || item['Lead Time'] || 14);
+                const rop = parseFloat(item['Reorder Point'] || 0);
+                const moq = parseFloat(item['MRQ (Min Release Qty)'] || item['MRQ'] || 0);
+
+                // Calculate metrics
+                const dailyDemand = monthlyDemand / 30.4;
+                const leadTimeDemand = dailyDemand * leadTimeDays;
+                const netCoverage = onHand + openPO - committed;
+                const daysOfSupply = dailyDemand > 0 ? netCoverage / dailyDemand : 999;
+                
+                // Decision signals
+                const signals = [];
+                let confidenceScore = 0;
+
+                if (available < 0) {
+                    signals.push({ type: 'critical', text: 'NEG_OH' });
+                    confidenceScore += 20;
+                }
+                
+                if (onHand < rop) {
+                    signals.push({ type: 'warning', text: 'BELOW_ROP' });
+                    confidenceScore += 15;
+                }
+                
+                if (netCoverage < leadTimeDemand) {
+                    signals.push({ type: 'critical', text: 'LEADTIME_EXPOSED' });
+                    confidenceScore += 25;
+                }
+                
+                if (openPO === 0 && netCoverage < 0) {
+                    signals.push({ type: 'critical', text: 'NO_PO' });
+                    confidenceScore += 20;
+                } else if (openPO > 0 && openPO < leadTimeDemand && netCoverage < 0) {
+                    signals.push({ type: 'warning', text: 'PO_INSUFFICIENT' });
+                    confidenceScore += 10;
+                }
+                
+                // Mover classification
+                const avgMonthly = annualUsage / 12;
+                let moverClass = 'DORMANT';
+                let moverPoints = -10;
+                
+                if (monthlyDemand > avgMonthly * 1.5) {
+                    moverClass = 'FAST';
+                    moverPoints = 15;
+                } else if (monthlyDemand > avgMonthly * 0.8) {
+                    moverClass = 'MEDIUM';
+                    moverPoints = 5;
+                } else if (monthlyDemand > 0) {
+                    moverClass = 'SLOW';
+                    moverPoints = 0;
+                }
+                
+                signals.push({ type: 'info', text: moverClass });
+                confidenceScore += moverPoints;
+                
+                if (secondary > Math.abs(available) && available < 0) {
+                    signals.push({ type: 'info', text: 'SECONDARY_COVERS' });
+                    confidenceScore -= 25;
+                }
+                
+                if (moq > leadTimeDemand * 2) {
+                    signals.push({ type: 'info', text: 'MRQ_CONSTRAINT' });
+                    confidenceScore -= 5;
+                }
+                
+                confidenceScore = Math.max(0, Math.min(100, confidenceScore));
+                
+                let action = 'NO_ACTION';
+                if (confidenceScore >= 70) {
+                    action = 'ORDER';
+                } else if (confidenceScore >= 60) {
+                    action = 'REVIEW';
+                } else if (confidenceScore >= 40 && openPO > 0) {
+                    action = 'EXPEDITE';
+                }
+                
+                let recommendedQty = 0;
+                if (action === 'ORDER' || action === 'REVIEW') {
+                    const safetyBuffer = leadTimeDemand * 0.1;
+                    const targetInventory = leadTimeDemand + safetyBuffer;
+                    recommendedQty = Math.max(0, targetInventory - netCoverage);
+                    
+                    if (moq > 0 && recommendedQty > 0) {
+                        recommendedQty = Math.ceil(recommendedQty / moq) * moq;
+                    }
+                }
+                
+                processed.calculatedMetrics = {
+                    netCoverage,
+                    daysOfSupply,
+                    leadTimeDemand,
+                    dailyDemand,
+                    moverClass,
+                    confidenceScore,
+                    signals,
+                    action,
+                    recommendedQty
+                };
+                
+                return processed;
+            });
+            
+            return processedItems;
+        }
+
+        function generateControlTower(data) {
+            const tab = document.getElementById('control-tower');
+            
+            const totalItems = data.length;
+            const stockoutItems = data.filter(item => 
+                item.calculatedMetrics.confidenceScore >= 70
+            ).length;
+            const orderToday = data.filter(item => 
+                item.calculatedMetrics.action === 'ORDER'
+            ).length;
+            const expediteItems = data.filter(item => 
+                item.calculatedMetrics.action === 'EXPEDITE'
+            ).length;
+            
+            tab.innerHTML = `
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-value">${totalItems}</div>
+                        <div class="kpi-label">Total Items</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" style="color: #e74c3c;">${stockoutItems}</div>
+                        <div class="kpi-label">High Risk</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" style="color: #667eea;">${orderToday}</div>
+                        <div class="kpi-label">Order Today</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" style="color: #e67e22;">${expediteItems}</div>
+                        <div class="kpi-label">Expedite</div>
+                    </div>
+                </div>
+                
+                <div class="supplier-section">
+                    <h3 style="margin-bottom: 1rem;">📊 Top Priority Items</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item Number</th>
+                                <th>Description</th>
+                                <th>Supplier</th>
+                                <th>Confidence</th>
+                                <th>Signals</th>
+                                <th>Action</th>
+                                <th>Recommended Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${generateTopPriorityRows(data)}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function generateTopPriorityRows(data) {
+            const topItems = data
+                .filter(item => item.calculatedMetrics.confidenceScore >= 60)
+                .sort((a, b) => b.calculatedMetrics.confidenceScore - a.calculatedMetrics.confidenceScore)
+                .slice(0, 20);
+            
+            if (topItems.length === 0) {
+                return '<tr><td colspan="7" style="text-align: center; color: #27ae60;">✅ No high-priority items found</td></tr>';
+            }
+            
+            return topItems.map(item => {
+                const metrics = item.calculatedMetrics;
+                const confidenceClass = metrics.confidenceScore >= 70 ? 'high' : 
+                                       metrics.confidenceScore >= 40 ? 'medium' : 'low';
+                const actionClass = metrics.action.toLowerCase().replace('_', '-');
+                
+                return `
+                    <tr>
+                        <td>${item['Item Number'] || ''}</td>
+                        <td>${item['Description'] || ''}</td>
+                        <td>${item['Alpha Name'] || item['Supplier'] || ''}</td>
+                        <td><span class="confidence-score confidence-${confidenceClass}">${metrics.confidenceScore}</span></td>
+                        <td>
+                            ${metrics.signals.map(s => 
+                                `<span class="signal-tag signal-${s.type}">${s.text}</span>`
+                            ).join('')}
+                        </td>
+                        <td><span class="confidence-score action-${actionClass}">${metrics.action}</span></td>
+                        <td>${metrics.recommendedQty > 0 ? Math.round(metrics.recommendedQty) : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function generateOrderToday(data) {
+            const orderItems = data
+                .filter(item => item.calculatedMetrics.action === 'ORDER')
+                .sort((a, b) => b.calculatedMetrics.confidenceScore - a.calculatedMetrics.confidenceScore);
+            
+            const tab = document.getElementById('order-today');
+            
+            if (orderItems.length === 0) {
+                tab.innerHTML = `
+                    <div class="empty-state">
+                        <h3>✅ No Orders Required Today</h3>
+                        <p>All items have sufficient coverage through their lead times.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            tab.innerHTML = `
+                <div class="supplier-section">
+                    <div class="supplier-header">
+                        <h3>📋 Items Requiring Orders (${orderItems.length} items)</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item Number</th>
+                                <th>Description</th>
+                                <th>Supplier</th>
+                                <th>On Hand</th>
+                                <th>Open PO</th>
+                                <th>Days Supply</th>
+                                <th>Confidence</th>
+                                <th>Recommended Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${generateOrderTodayRows(orderItems)}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function generateOrderTodayRows(items) {
+            return items.map(item => {
+                const metrics = item.calculatedMetrics;
+                const confidenceClass = metrics.confidenceScore >= 70 ? 'high' : 'medium';
+                
+                return `
+                    <tr>
+                        <td>${item['Item Number'] || ''}</td>
+                        <td>${item['Description'] || ''}</td>
+                        <td>${item['Alpha Name'] || item['Supplier'] || ''}</td>
+                        <td>${item['Total On Hand'] || item['Quantity On Hand'] || 0}</td>
+                        <td>${item['Quantity On P.O.'] || item['Quantity On PO'] || 0}</td>
+                        <td>${Math.floor(metrics.daysOfSupply)}</td>
+                        <td><span class="confidence-score confidence-${confidenceClass}">${metrics.confidenceScore}</span></td>
+                        <td><strong>${Math.round(metrics.recommendedQty)}</strong></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function generateSupplierUrgency(data) {
+            const supplierMap = {};
+            
+            data.forEach(item => {
+                const supplier = item['Alpha Name'] || item['Supplier'] || 'Unknown Supplier';
+                if (!supplierMap[supplier]) {
+                    supplierMap[supplier] = {
+                        name: supplier,
+                        items: [],
+                        urgencyScore: 0,
+                        highConfidenceCount: 0,
+                        fastMoverCount: 0
+                    };
+                }
+                
+                supplierMap[supplier].items.push(item);
+                
+                if (item.calculatedMetrics.confidenceScore >= 70) {
+                    supplierMap[supplier].highConfidenceCount++;
+                    supplierMap[supplier].urgencyScore += 10;
+                }
+                
+                if (item.calculatedMetrics.moverClass === 'FAST') {
+                    supplierMap[supplier].fastMoverCount++;
+                    supplierMap[supplier].urgencyScore += 5;
+                }
+            });
+            
+            const suppliers = Object.values(supplierMap)
+                .sort((a, b) => b.urgencyScore - a.urgencyScore);
+            
+            const tab = document.getElementById('supplier-urgency');
+            tab.innerHTML = suppliers.map(supplier => {
+                const urgencyLevel = supplier.urgencyScore > 50 ? 'critical' :
+                                    supplier.urgencyScore > 30 ? 'high' :
+                                    supplier.urgencyScore > 15 ? 'medium' : 'low';
+                
+                const urgencyLabel = urgencyLevel.toUpperCase();
+                
+                return `
+                    <div class="supplier-section">
+                        <div class="supplier-header">
+                            <div class="supplier-name">${supplier.name}</div>
+                            <div class="urgency-badge urgency-${urgencyLevel}">
+                                ${urgencyLabel} (Score: ${supplier.urgencyScore})
+                            </div>
+                        </div>
+                        <p style="margin-bottom: 1rem; color: #7f8c8d;">
+                            ${supplier.highConfidenceCount} high-risk items | 
+                            ${supplier.fastMoverCount} fast movers | 
+                            ${supplier.items.length} total items
+                        </p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Item Number</th>
+                                    <th>Description</th>
+                                    <th>Confidence</th>
+                                    <th>Action</th>
+                                    <th>Recommended Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${generateSupplierItemRows(supplier.items)}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function generateSupplierItemRows(items) {
+            const priorityItems = items
+                .filter(item => item.calculatedMetrics.action !== 'NO_ACTION')
+                .sort((a, b) => b.calculatedMetrics.confidenceScore - a.calculatedMetrics.confidenceScore)
+                .slice(0, 10);
+            
+            if (priorityItems.length === 0) {
+                return '<tr><td colspan="5" style="text-align: center; color: #27ae60;">✅ No action required for this supplier</td></tr>';
+            }
+            
+            return priorityItems.map(item => {
+                const metrics = item.calculatedMetrics;
+                const confidenceClass = metrics.confidenceScore >= 70 ? 'high' : 
+                                       metrics.confidenceScore >= 40 ? 'medium' : 'low';
+                const actionClass = metrics.action.toLowerCase().replace('_', '-');
+                
+                return `
+                    <tr>
+                        <td>${item['Item Number'] || ''}</td>
+                        <td>${item['Description'] || ''}</td>
+                        <td><span class="confidence-score confidence-${confidenceClass}">${metrics.confidenceScore}</span></td>
+                        <td><span class="confidence-score action-${actionClass}">${metrics.action}</span></td>
+                        <td>${metrics.recommendedQty > 0 ? Math.round(metrics.recommendedQty) : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function generateStockoutRisk(data) {
+            const today = new Date();
+            const stockoutItems = data
+                .filter(item => item.calculatedMetrics.daysOfSupply < 999 && item.calculatedMetrics.daysOfSupply < 30)
+                .map(item => {
+                    const stockoutDate = new Date(today);
+                    stockoutDate.setDate(stockoutDate.getDate() + Math.floor(item.calculatedMetrics.daysOfSupply));
+                    return {
+                        ...item,
+                        stockoutDate
+                    };
+                })
+                .sort((a, b) => a.stockoutDate - b.stockoutDate);
+            
+            const tab = document.getElementById('stockout-risk');
+            
+            if (stockoutItems.length === 0) {
+                tab.innerHTML = `
+                    <div class="empty-state">
+                        <h3>✅ No Imminent Stockout Risk</h3>
+                        <p>All items have more than 30 days of supply.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            tab.innerHTML = `
+                <div class="supplier-section">
+                    <h3 style="margin-bottom: 1rem;">⚠️ Stockout Risk Calendar (${stockoutItems.length} items)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item Number</th>
+                                <th>Description</th>
+                                <th>Supplier</th>
+                                <th>Days Until Stockout</th>
+                                <th>Projected Stockout Date</th>
+                                <th>Confidence</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${generateStockoutRows(stockoutItems)}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function generateStockoutRows(items) {
+            return items.map(item => {
+                const metrics = item.calculatedMetrics;
+                const days = Math.floor(metrics.daysOfSupply);
+                const date = item.stockoutDate.toLocaleDateString();
+                const confidenceClass = metrics.confidenceScore >= 70 ? 'high' : 
+                                       metrics.confidenceScore >= 40 ? 'medium' : 'low';
+                const actionClass = metrics.action.toLowerCase().replace('_', '-');
+                
+                return `
+                    <tr style="background: ${days <= 7 ? '#fee' : days <= 14 ? '#ffeaa7' : 'transparent'}">
+                        <td>${item['Item Number'] || ''}</td>
+                        <td>${item['Description'] || ''}</td>
+                        <td>${item['Alpha Name'] || item['Supplier'] || ''}</td>
+                        <td><strong>${days}</strong> days</td>
+                        <td>${date}</td>
+                        <td><span class="confidence-score confidence-${confidenceClass}">${metrics.confidenceScore}</span></td>
+                        <td><span class="confidence-score action-${actionClass}">${metrics.action}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function generateDataQuality(data) {
+            const qualityIssues = {
+                negativeAvailable: [],
+                secondaryCovers: [],
+                noPOWithNeed: [],
+                excessInventory: [],
+                dataAnomalies: []
+            };
+            
+            data.forEach(item => {
+                const metrics = item.calculatedMetrics;
+                const available = parseFloat(item['Quantity Available'] || 0);
+                const secondary = parseFloat(item['On Hand Secondary'] || 0);
+                const openPO = parseFloat(item['Quantity On P.O.'] || item['Quantity On PO'] || 0);
+                
+                if (available < 0) {
+                    qualityIssues.negativeAvailable.push(item);
+                }
+                
+                if (secondary > Math.abs(available) && available < 0) {
+                    qualityIssues.secondaryCovers.push(item);
+                }
+                
+                if (openPO === 0 && metrics.confidenceScore > 60) {
+                    qualityIssues.noPOWithNeed.push(item);
+                }
+                
+                if (metrics.daysOfSupply > 180 && metrics.daysOfSupply < 999) {
+                    qualityIssues.excessInventory.push(item);
+                }
+                
+                const monthlyDemand = parseFloat(item['Average Usage'] || 0);
+                const annualUsage = parseFloat(item['Previous 12 Mo Usage'] || 0);
+                const avgMonthly = annualUsage / 12;
+                
+                if (monthlyDemand > avgMonthly * 3) {
+                    qualityIssues.dataAnomalies.push({
+                        ...item,
+                        anomaly: 'Demand spike: Recent demand 3x annual average'
+                    });
+                }
+            });
+            
+            const tab = document.getElementById('data-quality');
+            tab.innerHTML = `
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-value" style="color: #e74c3c;">${qualityIssues.negativeAvailable.length}</div>
+                        <div class="kpi-label">Negative Available</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" style="color: #3498db;">${qualityIssues.secondaryCovers.length}</div>
+                        <div class="kpi-label">Secondary Covers</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" style="color: #e67e22;">${qualityIssues.noPOWithNeed.length}</div>
+                        <div class="kpi-label">No PO With Need</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" style="color: #f39c12;">${qualityIssues.excessInventory.length}</div>
+                        <div class="kpi-label">Excess Inventory</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" style="color: #9b59b6;">${qualityIssues.dataAnomalies.length}</div>
+                        <div class="kpi-label">Data Anomalies</div>
+                    </div>
+                </div>
+                
+                <div class="supplier-section">
+                    <h3>🔍 Data Quality Details</h3>
+                    <p style="color: #7f8c8d; margin: 1rem 0;">
+                        These items have data patterns that warrant verification before action.
+                    </p>
+                    ${generateQualitySection('Negative Available', qualityIssues.negativeAvailable)}
+                    ${generateQualitySection('Secondary Covers Shortage', qualityIssues.secondaryCovers)}
+                    ${generateQualitySection('High Confidence But No PO', qualityIssues.noPOWithNeed)}
+                    ${generateQualitySection('Excess Inventory', qualityIssues.excessInventory)}
+                    ${generateQualitySection('Demand Anomalies', qualityIssues.dataAnomalies)}
+                </div>
+            `;
+        }
+
+        function generateQualitySection(title, items) {
+            if (items.length === 0) {
+                return `
+                    <details style="margin: 1rem 0;">
+                        <summary style="cursor: pointer; font-weight: 600; padding: 0.5rem; background: #f8f9fa; border-radius: 4px;">
+                            ${title} (0 items) ✅
+                        </summary>
+                    </details>
+                `;
+            }
+            
+            const displayItems = items.slice(0, 20);
+            
+            return `
+                <details style="margin: 1rem 0;">
+                    <summary style="cursor: pointer; font-weight: 600; padding: 0.5rem; background: #fff3cd; border-radius: 4px;">
+                        ${title} (${items.length} items) - Click to expand
+                    </summary>
+                    <table style="margin-top: 1rem;">
+                        <thead>
+                            <tr>
+                                <th>Item Number</th>
+                                <th>Description</th>
+                                <th>On Hand</th>
+                                <th>Secondary</th>
+                                <th>Open PO</th>
+                                <th>Available</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${displayItems.map(item => `
+                                <tr>
+                                    <td>${item['Item Number'] || ''}</td>
+                                    <td>${item['Description'] || ''}</td>
+                                    <td>${item['Total On Hand'] || item['Quantity On Hand'] || 0}</td>
+                                    <td>${item['On Hand Secondary'] || 0}</td>
+                                    <td>${item['Quantity On P.O.'] || item['Quantity On PO'] || 0}</td>
+                                    <td>${item['Quantity Available'] || 0}</td>
+                                    <td style="font-size: 0.85rem; color: #7f8c8d;">${item.anomaly || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    ${items.length > 20 ? `<p style="text-align: center; margin-top: 1rem; color: #7f8c8d;">Showing 20 of ${items.length} items</p>` : ''}
+                </details>
+            `;
+        }
+    </script>
+</body>
+</html>
