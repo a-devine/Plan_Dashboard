@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎯 Raynor Planning Intelligence - Work Mode</title>
+    <title>🎯 Raynor Planning Intelligence - Work Mode Pro</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
@@ -20,7 +20,7 @@
         }
         
         .container {
-            max-width: 1600px;
+            max-width: 1800px;
             margin: 0 auto;
         }
         
@@ -57,36 +57,53 @@
         }
         
         .header-right {
-            text-align: right;
+            display: flex;
+            gap: 10px;
         }
         
-        .upload-btn {
-            background: #667eea;
-            color: white;
-            border: none;
+        .header-btn {
             padding: 10px 20px;
+            border: none;
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
-            margin-bottom: 5px;
+            font-weight: 600;
         }
         
-        .upload-btn:hover {
+        .btn-upload {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-upload:hover {
             background: #5568d3;
         }
         
-        .export-btn {
+        .btn-export {
             background: #28a745;
             color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
         }
         
-        .export-btn:hover {
+        .btn-export:hover {
             background: #218838;
+        }
+        
+        .btn-history {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-history:hover {
+            background: #2980b9;
+        }
+        
+        .btn-save {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .btn-save:hover {
+            background: #e67e22;
         }
         
         .toolbar {
@@ -95,10 +112,18 @@
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
             margin-bottom: 20px;
+        }
+        
+        .toolbar-row {
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
             align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .toolbar-row:last-child {
+            margin-bottom: 0;
         }
         
         .toolbar-section {
@@ -133,6 +158,7 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 600;
         }
         
         .filter-btn:hover {
@@ -147,6 +173,48 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
+        }
+        
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .bulk-actions label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .bulk-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .btn-ordered {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-pending {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .btn-skip {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-clear-status {
+            background: #e74c3c;
+            color: white;
         }
         
         .stats-bar {
@@ -185,6 +253,8 @@
         
         .table-container {
             overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
         }
         
         table {
@@ -231,6 +301,8 @@
         .badge-success { background: #28a745; color: white; }
         .badge-info { background: #3498db; color: white; }
         .badge-secondary { background: #6c757d; color: white; }
+        .badge-pending { background: #f39c12; color: white; }
+        .badge-skip { background: #95a5a6; color: white; }
         
         .notes-input {
             width: 200px;
@@ -251,27 +323,12 @@
             cursor: pointer;
         }
         
-        .action-cell {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .action-btn {
+        .status-select {
             padding: 4px 8px;
-            font-size: 11px;
-            border: none;
+            border: 1px solid #dee2e6;
             border-radius: 4px;
+            font-size: 12px;
             cursor: pointer;
-        }
-        
-        .btn-order {
-            background: #28a745;
-            color: white;
-        }
-        
-        .btn-skip {
-            background: #6c757d;
-            color: white;
         }
         
         .modal {
@@ -295,8 +352,10 @@
             background: white;
             padding: 30px;
             border-radius: 12px;
-            max-width: 500px;
+            max-width: 800px;
             width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
         }
         
         .modal-content h2 {
@@ -304,7 +363,7 @@
             margin-bottom: 20px;
         }
         
-        .modal-content input {
+        .modal-content input[type="file"] {
             display: none;
         }
         
@@ -321,6 +380,24 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .history-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .history-table th {
+            background: #f8f9fa;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .history-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #dee2e6;
         }
         
         .welcome {
@@ -359,6 +436,54 @@
             background: #fff3cd !important;
         }
         
+        .row-ordered {
+            background: #d4edda !important;
+        }
+        
+        .row-pending {
+            background: #fff3cd !important;
+        }
+        
+        .row-skip {
+            background: #e2e3e5 !important;
+        }
+        
+        .save-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
         @media (max-width: 768px) {
             .header {
                 flex-direction: column;
@@ -367,9 +492,11 @@
             
             .header-right {
                 margin-top: 15px;
+                flex-direction: column;
+                width: 100%;
             }
             
-            .toolbar {
+            .toolbar-row {
                 flex-direction: column;
             }
             
@@ -387,47 +514,69 @@
     <div class="container">
         <div class="header">
             <div class="header-left">
-                <h1>🎯 Raynor Planning Intelligence<span class="version-badge">v3.0 - Work Mode</span></h1>
-                <p class="subtitle">Filter → Review → Add Notes → Export Orders</p>
+                <h1>🎯 Raynor Planning Intelligence<span class="version-badge">v3.1 - Pro Mode</span></h1>
+                <p class="subtitle">Status Tracking | Bulk Actions | Session Save | Order History</p>
             </div>
             <div class="header-right">
-                <button class="upload-btn" onclick="openUploadModal()">📁 Upload Data</button><br>
-                <button class="export-btn" onclick="exportToExcel()" id="exportBtn" disabled>💾 Export to Excel</button>
+                <button class="header-btn btn-upload" onclick="openUploadModal()">📁 Upload</button>
+                <button class="header-btn btn-save" onclick="saveSession()" id="saveBtn" disabled>💾 Save Session</button>
+                <button class="header-btn btn-history" onclick="openHistoryModal()" id="historyBtn" disabled>📜 History</button>
+                <button class="header-btn btn-export" onclick="exportToExcel()" id="exportBtn" disabled>⬇️ Export</button>
             </div>
         </div>
         
         <div class="toolbar" id="toolbar" style="display: none;">
-            <div class="toolbar-section">
-                <label>Supplier:</label>
-                <select id="supplierFilter">
-                    <option value="">All Suppliers</option>
-                </select>
+            <div class="toolbar-row">
+                <div class="toolbar-section">
+                    <label>Supplier:</label>
+                    <select id="supplierFilter">
+                        <option value="">All Suppliers</option>
+                    </select>
+                </div>
+                
+                <div class="toolbar-section">
+                    <label>Action:</label>
+                    <select id="actionFilter">
+                        <option value="">All Actions</option>
+                        <option value="ORDER">Order</option>
+                        <option value="REVIEW">Review</option>
+                        <option value="EXPEDITE">Expedite</option>
+                        <option value="NO_ACTION">No Action</option>
+                    </select>
+                </div>
+                
+                <div class="toolbar-section">
+                    <label>Status:</label>
+                    <select id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="ORDERED">Ordered</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="SKIP">Skip</option>
+                    </select>
+                </div>
+                
+                <div class="toolbar-section">
+                    <label>Min Confidence:</label>
+                    <input type="number" id="confidenceFilter" min="0" max="100" placeholder="e.g. 60" style="width: 80px;">
+                </div>
+                
+                <div class="toolbar-section">
+                    <label>Search:</label>
+                    <input type="text" id="itemSearch" placeholder="Item or description">
+                </div>
+                
+                <div class="toolbar-section">
+                    <button class="filter-btn" onclick="applyFilters()">🔍 Apply</button>
+                    <button class="clear-btn" onclick="clearFilters()">✖ Clear</button>
+                </div>
             </div>
             
-            <div class="toolbar-section">
-                <label>Action:</label>
-                <select id="actionFilter">
-                    <option value="">All Actions</option>
-                    <option value="ORDER">Order</option>
-                    <option value="REVIEW">Review</option>
-                    <option value="EXPEDITE">Expedite</option>
-                    <option value="NO_ACTION">No Action</option>
-                </select>
-            </div>
-            
-            <div class="toolbar-section">
-                <label>Min Confidence:</label>
-                <input type="number" id="confidenceFilter" min="0" max="100" placeholder="e.g. 60">
-            </div>
-            
-            <div class="toolbar-section">
-                <label>Search Item:</label>
-                <input type="text" id="itemSearch" placeholder="Item number or description">
-            </div>
-            
-            <div class="toolbar-section">
-                <button class="filter-btn" onclick="applyFilters()">🔍 Apply Filters</button>
-                <button class="clear-btn" onclick="clearFilters()">✖ Clear</button>
+            <div class="bulk-actions">
+                <label><span id="selectedCount">0</span> selected:</label>
+                <button class="bulk-btn btn-ordered" onclick="bulkSetStatus('ORDERED')">✓ Mark Ordered</button>
+                <button class="bulk-btn btn-pending" onclick="bulkSetStatus('PENDING')">⏳ Mark Pending</button>
+                <button class="bulk-btn btn-skip" onclick="bulkSetStatus('SKIP')">⊘ Mark Skip</button>
+                <button class="bulk-btn btn-clear-status" onclick="bulkSetStatus('')">✖ Clear Status</button>
             </div>
         </div>
         
@@ -438,25 +587,29 @@
             </div>
             <div class="stat-item">
                 <div class="stat-value" id="filteredItems">0</div>
-                <div class="stat-label">Filtered</div>
+                <div class="stat-label">Showing</div>
             </div>
             <div class="stat-item">
                 <div class="stat-value" id="selectedItems">0</div>
                 <div class="stat-label">Selected</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="orderCount">0</div>
-                <div class="stat-label">Order</div>
+                <div class="stat-value" id="orderedCount">0</div>
+                <div class="stat-label">Ordered</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="reviewCount">0</div>
-                <div class="stat-label">Review</div>
+                <div class="stat-value" id="pendingCount">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="skipCount">0</div>
+                <div class="stat-label">Skipped</div>
             </div>
         </div>
         
         <div class="work-area">
             <div class="welcome" id="welcome">
-                <h2>Welcome to Work Mode</h2>
+                <h2>Welcome to Pro Work Mode</h2>
                 <p>Upload your buying sheet to start managing orders</p>
                 <button class="welcome-btn" onclick="openUploadModal()">📁 Upload Buying Sheet</button>
             </div>
@@ -470,7 +623,7 @@
                             <th>Description</th>
                             <th>Supplier</th>
                             <th>On Hand</th>
-                            <th>Available</th>
+                            <th>Avail</th>
                             <th>Open PO</th>
                             <th>Days</th>
                             <th>Conf</th>
@@ -487,14 +640,20 @@
         </div>
     </div>
     
+    <!-- Save Indicator -->
+    <div class="save-indicator" id="saveIndicator">
+        ✓ Session Saved
+    </div>
+    
     <!-- Upload Modal -->
     <div class="modal" id="uploadModal">
         <div class="modal-content">
             <h2>📁 Upload Data</h2>
+            <div id="sessionAlert" style="display: none;"></div>
             <p style="margin-bottom: 15px;">Upload your buying sheet to begin</p>
             <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
             <label for="fileInput" style="display: block; padding: 20px; border: 2px dashed #dee2e6; border-radius: 8px; text-align: center; cursor: pointer;">
-                Click to select file
+                📂 Click to select file
             </label>
             <p id="fileName" style="margin-top: 10px; font-size: 14px; color: #666;"></p>
             <div class="modal-buttons">
@@ -504,11 +663,48 @@
         </div>
     </div>
     
+    <!-- History Modal -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <h2>📜 Order History</h2>
+            <p style="color: #666; margin-bottom: 15px;">Record of items you've marked as ORDERED</p>
+            <div id="historyContent">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Item</th>
+                            <th>Supplier</th>
+                            <th>Qty</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn" style="background: #e74c3c; color: white;" onclick="clearHistory()">Clear History</button>
+                <button class="modal-btn" style="background: #28a745; color: white;" onclick="exportHistory()">Export History</button>
+                <button class="modal-btn" style="background: #6c757d; color: white;" onclick="closeHistoryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         let allData = [];
         let filteredData = [];
         let itemNotes = {};
         let itemStatus = {};
+        let orderHistory = [];
+        const SESSION_KEY = 'raynor_planning_session';
+        const HISTORY_KEY = 'raynor_order_history';
+        
+        // Load saved session on startup
+        window.addEventListener('load', function() {
+            loadSession();
+            loadHistory();
+        });
         
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -519,11 +715,22 @@
         });
         
         function openUploadModal() {
+            // Check for existing session
+            const session = localStorage.getItem(SESSION_KEY);
+            if (session) {
+                document.getElementById('sessionAlert').innerHTML = `
+                    <div class="alert alert-info">
+                        ℹ️ <strong>Saved session found!</strong> Upload new data to start fresh, or cancel to continue previous session.
+                    </div>
+                `;
+                document.getElementById('sessionAlert').style.display = 'block';
+            }
             document.getElementById('uploadModal').classList.add('active');
         }
         
         function closeUploadModal() {
             document.getElementById('uploadModal').classList.remove('active');
+            document.getElementById('sessionAlert').style.display = 'none';
         }
         
         function processUpload() {
@@ -554,17 +761,26 @@
                     allData = processData(jsonData);
                     filteredData = [...allData];
                     
+                    // Reset session data
+                    itemNotes = {};
+                    itemStatus = {};
+                    
                     populateSupplierFilter();
                     renderTable();
                     updateStats();
                     
                     document.getElementById('welcome').style.display = 'none';
-                    document.getElementById('toolbar').style.display = 'flex';
+                    document.getElementById('toolbar').style.display = 'block';
                     document.getElementById('statsBar').style.display = 'flex';
                     document.getElementById('tableContainer').style.display = 'block';
                     document.getElementById('exportBtn').disabled = false;
+                    document.getElementById('saveBtn').disabled = false;
+                    document.getElementById('historyBtn').disabled = false;
                     
                     closeUploadModal();
+                    
+                    // Auto-save
+                    saveSession();
                     
                 } catch (error) {
                     alert('Error processing file: ' + error.message);
@@ -655,12 +871,14 @@
         function applyFilters() {
             const supplier = document.getElementById('supplierFilter').value;
             const action = document.getElementById('actionFilter').value;
+            const status = document.getElementById('statusFilter').value;
             const minConf = parseInt(document.getElementById('confidenceFilter').value) || 0;
             const search = document.getElementById('itemSearch').value.toLowerCase();
             
             filteredData = allData.filter(item => {
                 if (supplier && item.supplier !== supplier) return false;
                 if (action && item.action !== action) return false;
+                if (status && itemStatus[item.id] !== status) return false;
                 if (item.confidence < minConf) return false;
                 if (search && !item.item.toLowerCase().includes(search) && !item.description.toLowerCase().includes(search)) return false;
                 return true;
@@ -673,6 +891,7 @@
         function clearFilters() {
             document.getElementById('supplierFilter').value = '';
             document.getElementById('actionFilter').value = '';
+            document.getElementById('statusFilter').value = '';
             document.getElementById('confidenceFilter').value = '';
             document.getElementById('itemSearch').value = '';
             
@@ -687,15 +906,17 @@
             
             filteredData.forEach(item => {
                 const row = document.createElement('tr');
+                
+                const status = itemStatus[item.id] || '';
+                
                 if (item.selected) row.classList.add('highlight-row');
+                if (status === 'ORDERED') row.classList.add('row-ordered');
+                else if (status === 'PENDING') row.classList.add('row-pending');
+                else if (status === 'SKIP') row.classList.add('row-skip');
                 
                 const actionBadge = item.action === 'ORDER' ? 'badge-danger' : 
                                    item.action === 'REVIEW' ? 'badge-warning' : 
                                    item.action === 'EXPEDITE' ? 'badge-info' : 'badge-secondary';
-                
-                const statusText = itemStatus[item.id] || '-';
-                const statusClass = statusText === 'ORDERED' ? 'badge-success' : 
-                                   statusText === 'SKIP' ? 'badge-secondary' : '';
                 
                 row.innerHTML = `
                     <td><input type="checkbox" class="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleSelect(${item.id})"></td>
@@ -710,7 +931,14 @@
                     <td><span class="badge ${actionBadge}">${item.action}</span></td>
                     <td><strong>${item.recQty > 0 ? item.recQty : '-'}</strong></td>
                     <td><input type="text" class="notes-input" value="${itemNotes[item.id] || ''}" onchange="saveNote(${item.id}, this.value)" placeholder="Add note..."></td>
-                    <td><span class="badge ${statusClass}">${statusText}</span></td>
+                    <td>
+                        <select class="status-select" onchange="setStatus(${item.id}, this.value)">
+                            <option value="" ${status === '' ? 'selected' : ''}>-</option>
+                            <option value="ORDERED" ${status === 'ORDERED' ? 'selected' : ''}>Ordered</option>
+                            <option value="PENDING" ${status === 'PENDING' ? 'selected' : ''}>Pending</option>
+                            <option value="SKIP" ${status === 'SKIP' ? 'selected' : ''}>Skip</option>
+                        </select>
+                    </td>
                 `;
                 
                 tbody.appendChild(row);
@@ -726,6 +954,7 @@
             });
             renderTable();
             updateStats();
+            autoSave();
         }
         
         function toggleSelect(id) {
@@ -736,18 +965,222 @@
                 if (filtered) filtered.selected = item.selected;
             }
             updateStats();
+            autoSave();
         }
         
         function saveNote(id, note) {
             itemNotes[id] = note;
+            autoSave();
+        }
+        
+        function setStatus(id, status) {
+            const prevStatus = itemStatus[id];
+            
+            if (status) {
+                itemStatus[id] = status;
+                
+                // Add to history if marked as ORDERED
+                if (status === 'ORDERED' && prevStatus !== 'ORDERED') {
+                    const item = allData.find(i => i.id === id);
+                    if (item) {
+                        addToHistory(item);
+                    }
+                }
+            } else {
+                delete itemStatus[id];
+            }
+            
+            renderTable();
+            updateStats();
+            autoSave();
+        }
+        
+        function bulkSetStatus(status) {
+            const selected = allData.filter(i => i.selected);
+            
+            if (selected.length === 0) {
+                alert('No items selected');
+                return;
+            }
+            
+            selected.forEach(item => {
+                const prevStatus = itemStatus[item.id];
+                
+                if (status) {
+                    itemStatus[item.id] = status;
+                    
+                    // Add to history if marked as ORDERED
+                    if (status === 'ORDERED' && prevStatus !== 'ORDERED') {
+                        addToHistory(item);
+                    }
+                } else {
+                    delete itemStatus[item.id];
+                }
+            });
+            
+            renderTable();
+            updateStats();
+            autoSave();
+            
+            alert(`Updated ${selected.length} items to: ${status || 'Clear'}`);
+        }
+        
+        function addToHistory(item) {
+            const entry = {
+                date: new Date().toISOString(),
+                item: item.item,
+                description: item.description,
+                supplier: item.supplier,
+                qty: item.recQty,
+                notes: itemNotes[item.id] || ''
+            };
+            
+            orderHistory.push(entry);
+            saveHistory();
         }
         
         function updateStats() {
             document.getElementById('totalItems').textContent = allData.length;
             document.getElementById('filteredItems').textContent = filteredData.length;
             document.getElementById('selectedItems').textContent = allData.filter(i => i.selected).length;
-            document.getElementById('orderCount').textContent = filteredData.filter(i => i.action === 'ORDER').length;
-            document.getElementById('reviewCount').textContent = filteredData.filter(i => i.action === 'REVIEW').length;
+            document.getElementById('selectedCount').textContent = allData.filter(i => i.selected).length;
+            
+            const ordered = Object.values(itemStatus).filter(s => s === 'ORDERED').length;
+            const pending = Object.values(itemStatus).filter(s => s === 'PENDING').length;
+            const skip = Object.values(itemStatus).filter(s => s === 'SKIP').length;
+            
+            document.getElementById('orderedCount').textContent = ordered;
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('skipCount').textContent = skip;
+        }
+        
+        function saveSession() {
+            const session = {
+                data: allData,
+                notes: itemNotes,
+                status: itemStatus,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+            
+            // Show indicator
+            const indicator = document.getElementById('saveIndicator');
+            indicator.style.display = 'block';
+            setTimeout(() => {
+                indicator.style.display = 'none';
+            }, 2000);
+        }
+        
+        function autoSave() {
+            // Debounced auto-save
+            clearTimeout(window.autoSaveTimer);
+            window.autoSaveTimer = setTimeout(() => {
+                saveSession();
+            }, 2000);
+        }
+        
+        function loadSession() {
+            const saved = localStorage.getItem(SESSION_KEY);
+            if (!saved) return;
+            
+            try {
+                const session = JSON.parse(saved);
+                allData = session.data;
+                itemNotes = session.notes;
+                itemStatus = session.status;
+                filteredData = [...allData];
+                
+                if (allData.length > 0) {
+                    populateSupplierFilter();
+                    renderTable();
+                    updateStats();
+                    
+                    document.getElementById('welcome').style.display = 'none';
+                    document.getElementById('toolbar').style.display = 'block';
+                    document.getElementById('statsBar').style.display = 'flex';
+                    document.getElementById('tableContainer').style.display = 'block';
+                    document.getElementById('exportBtn').disabled = false;
+                    document.getElementById('saveBtn').disabled = false;
+                    document.getElementById('historyBtn').disabled = false;
+                }
+            } catch (error) {
+                console.error('Error loading session:', error);
+            }
+        }
+        
+        function saveHistory() {
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(orderHistory));
+        }
+        
+        function loadHistory() {
+            const saved = localStorage.getItem(HISTORY_KEY);
+            if (saved) {
+                try {
+                    orderHistory = JSON.parse(saved);
+                } catch (error) {
+                    console.error('Error loading history:', error);
+                }
+            }
+        }
+        
+        function openHistoryModal() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            
+            if (orderHistory.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px; color: #666;">No order history yet</td></tr>';
+            } else {
+                // Show most recent first
+                [...orderHistory].reverse().forEach(entry => {
+                    const row = document.createElement('tr');
+                    const date = new Date(entry.date);
+                    row.innerHTML = `
+                        <td>${date.toLocaleDateString()} ${date.toLocaleTimeString()}</td>
+                        <td>${entry.item}</td>
+                        <td>${entry.supplier}</td>
+                        <td>${entry.qty}</td>
+                        <td>${entry.notes}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            
+            document.getElementById('historyModal').classList.add('active');
+        }
+        
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.remove('active');
+        }
+        
+        function clearHistory() {
+            if (confirm('Clear all order history? This cannot be undone.')) {
+                orderHistory = [];
+                saveHistory();
+                openHistoryModal();
+            }
+        }
+        
+        function exportHistory() {
+            if (orderHistory.length === 0) {
+                alert('No history to export');
+                return;
+            }
+            
+            const exportData = orderHistory.map(entry => ({
+                'Date': new Date(entry.date).toLocaleString(),
+                'Item': entry.item,
+                'Description': entry.description,
+                'Supplier': entry.supplier,
+                'Qty': entry.qty,
+                'Notes': entry.notes
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Order History");
+            
+            XLSX.writeFile(wb, `Order_History_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
         
         function exportToExcel() {
