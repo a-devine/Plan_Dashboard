@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎯 Raynor Planning Intelligence Dashboard v2.0</title>
+    <title>🎯 Raynor Planning Intelligence - Work Mode</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
@@ -20,28 +20,30 @@
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
         }
         
         .header {
             background: white;
-            padding: 30px;
+            padding: 20px 30px;
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-            text-align: center;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .header h1 {
+        .header-left h1 {
             color: #667eea;
-            font-size: 32px;
-            margin-bottom: 10px;
+            font-size: 28px;
+            margin-bottom: 5px;
         }
         
-        .header .subtitle {
+        .header-left .subtitle {
             color: #666;
-            font-size: 16px;
+            font-size: 14px;
         }
         
         .version-badge {
@@ -50,211 +52,166 @@
             color: white;
             padding: 4px 12px;
             border-radius: 12px;
-            font-size: 12px;
+            font-size: 11px;
             margin-left: 10px;
         }
         
-        .upload-section {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
+        .header-right {
+            text-align: right;
         }
         
-        .upload-section h2 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
-        
-        .file-upload-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .file-upload-box {
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        
-        .file-upload-box:hover {
-            border-color: #667eea;
-            background: #f8f9ff;
-        }
-        
-        .file-upload-box.uploaded {
-            border-color: #28a745;
-            background: #f0fff4;
-        }
-        
-        .file-upload-box h3 {
-            font-size: 16px;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        
-        .file-upload-box .required {
-            color: #e74c3c;
-            font-size: 12px;
-        }
-        
-        .file-upload-box .optional {
-            color: #666;
-            font-size: 12px;
-        }
-        
-        .file-upload-box input[type="file"] {
-            display: block;
-            margin: 10px auto;
+        .upload-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
             font-size: 14px;
+            margin-bottom: 5px;
         }
         
-        .file-status {
-            font-size: 12px;
-            margin-top: 10px;
-            padding: 5px;
-            border-radius: 4px;
+        .upload-btn:hover {
+            background: #5568d3;
         }
         
-        .file-status.success {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .file-status.error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .process-btn {
+        .export-btn {
             background: #28a745;
             color: white;
             border: none;
-            padding: 15px 40px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px;
+            padding: 10px 20px;
+            border-radius: 6px;
             cursor: pointer;
-            display: block;
-            margin: 20px auto;
-            transition: all 0.3s;
+            font-size: 14px;
         }
         
-        .process-btn:hover:not(:disabled) {
+        .export-btn:hover {
             background: #218838;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(40,167,69,0.3);
         }
         
-        .process-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+        .toolbar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
         }
         
-        .tabs {
+        .toolbar-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .toolbar label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .toolbar select, .toolbar input {
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .toolbar select:focus, .toolbar input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .filter-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .filter-btn:hover {
+            background: #5568d3;
+        }
+        
+        .clear-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .stats-bar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 5px 15px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .work-area {
             background: white;
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
             overflow: hidden;
         }
         
-        .tab-buttons {
-            display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #dee2e6;
-            flex-wrap: wrap;
-        }
-        
-        .tab-button {
-            flex: 1;
-            min-width: 150px;
-            padding: 15px 20px;
-            background: none;
-            border: none;
-            font-size: 14px;
-            font-weight: 600;
-            color: #666;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .tab-button:hover {
-            background: #e9ecef;
-        }
-        
-        .tab-button.active {
-            background: white;
-            color: #667eea;
-            border-bottom: 3px solid #667eea;
-        }
-        
-        .tab-content {
-            display: none;
-            padding: 30px;
-            min-height: 400px;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .kpi-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            border-left: 4px solid;
-        }
-        
-        .kpi-card.primary { border-color: #667eea; }
-        .kpi-card.danger { border-color: #e74c3c; }
-        .kpi-card.success { border-color: #28a745; }
-        .kpi-card.warning { border-color: #f39c12; }
-        .kpi-card.info { border-color: #3498db; }
-        
-        .kpi-value {
-            font-size: 36px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .kpi-label {
-            font-size: 14px;
-            color: #666;
+        .table-container {
+            overflow-x: auto;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
         
         table thead {
             background: #667eea;
             color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         table th {
-            padding: 12px;
+            padding: 12px 8px;
             text-align: left;
             font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
         }
         
         table td {
-            padding: 10px 12px;
+            padding: 10px 8px;
             border-bottom: 1px solid #dee2e6;
+            font-size: 13px;
         }
         
         table tbody tr:hover {
@@ -263,9 +220,9 @@
         
         .badge {
             display: inline-block;
-            padding: 4px 8px;
+            padding: 3px 8px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
         }
         
@@ -273,69 +230,155 @@
         .badge-warning { background: #f39c12; color: white; }
         .badge-success { background: #28a745; color: white; }
         .badge-info { background: #3498db; color: white; }
+        .badge-secondary { background: #6c757d; color: white; }
         
-        .supplier-card {
-            background: white;
+        .notes-input {
+            width: 200px;
+            padding: 6px;
             border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 15px;
-        }
-        
-        .supplier-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .supplier-name {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        
-        .urgency-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-weight: 600;
+            border-radius: 4px;
             font-size: 12px;
         }
         
-        .urgency-critical { background: #e74c3c; color: white; }
-        .urgency-high { background: #f39c12; color: white; }
-        .urgency-medium { background: #3498db; color: white; }
-        .urgency-low { background: #28a745; color: white; }
+        .notes-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .action-cell {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-order {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-skip {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .modal-content h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        
+        .modal-content input {
+            display: none;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
         
         .welcome {
             text-align: center;
-            padding: 60px 20px;
+            padding: 100px 20px;
             color: #666;
         }
         
         .welcome h2 {
             color: #2c3e50;
             margin-bottom: 20px;
+            font-size: 32px;
         }
         
-        .welcome ul {
-            text-align: left;
-            max-width: 600px;
-            margin: 20px auto;
-            line-height: 1.8;
+        .welcome p {
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        
+        .welcome-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .welcome-btn:hover {
+            background: #5568d3;
+        }
+        
+        .highlight-row {
+            background: #fff3cd !important;
         }
         
         @media (max-width: 768px) {
-            .file-upload-grid {
-                grid-template-columns: 1fr;
+            .header {
+                flex-direction: column;
+                text-align: center;
             }
             
-            .tab-buttons {
+            .header-right {
+                margin-top: 15px;
+            }
+            
+            .toolbar {
                 flex-direction: column;
             }
             
-            .tab-button {
-                min-width: 100%;
+            .toolbar-section {
+                width: 100%;
+            }
+            
+            .stats-bar {
+                flex-direction: column;
             }
         }
     </style>
@@ -343,126 +386,154 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 Raynor Planning Intelligence Dashboard<span class="version-badge">v2.0 - Enhanced</span></h1>
-            <p class="subtitle">Stockout Prevention | Order Decision Support | Supplier Performance</p>
+            <div class="header-left">
+                <h1>🎯 Raynor Planning Intelligence<span class="version-badge">v3.0 - Work Mode</span></h1>
+                <p class="subtitle">Filter → Review → Add Notes → Export Orders</p>
+            </div>
+            <div class="header-right">
+                <button class="upload-btn" onclick="openUploadModal()">📁 Upload Data</button><br>
+                <button class="export-btn" onclick="exportToExcel()" id="exportBtn" disabled>💾 Export to Excel</button>
+            </div>
         </div>
         
-        <div class="upload-section">
-            <h2>📁 Data Upload</h2>
-            
-            <div class="file-upload-grid">
-                <div class="file-upload-box" id="buyingSheetBox">
-                    <h3>📊 Buying Sheet</h3>
-                    <p class="required">✓ REQUIRED</p>
-                    <input type="file" id="buyingSheetInput" accept=".xlsx,.xls,.csv">
-                    <div class="file-status" id="buyingSheetStatus"></div>
-                </div>
-                
-                <div class="file-upload-box" id="poHistoryBox">
-                    <h3>📦 PO Receipt History</h3>
-                    <p class="optional">⭐ Recommended (P4312)</p>
-                    <input type="file" id="poHistoryInput" accept=".xlsx,.xls,.csv">
-                    <div class="file-status" id="poHistoryStatus"></div>
-                </div>
-                
-                <div class="file-upload-box" id="openPOBox">
-                    <h3>📋 Open Purchase Orders</h3>
-                    <p class="optional">⭐ Recommended (P4310)</p>
-                    <input type="file" id="openPOInput" accept=".xlsx,.xls,.csv">
-                    <div class="file-status" id="openPOStatus"></div>
-                </div>
+        <div class="toolbar" id="toolbar" style="display: none;">
+            <div class="toolbar-section">
+                <label>Supplier:</label>
+                <select id="supplierFilter">
+                    <option value="">All Suppliers</option>
+                </select>
             </div>
             
-            <button class="process-btn" id="processBtn" disabled>🚀 Process Data & Generate Dashboard</button>
+            <div class="toolbar-section">
+                <label>Action:</label>
+                <select id="actionFilter">
+                    <option value="">All Actions</option>
+                    <option value="ORDER">Order</option>
+                    <option value="REVIEW">Review</option>
+                    <option value="EXPEDITE">Expedite</option>
+                    <option value="NO_ACTION">No Action</option>
+                </select>
+            </div>
+            
+            <div class="toolbar-section">
+                <label>Min Confidence:</label>
+                <input type="number" id="confidenceFilter" min="0" max="100" placeholder="e.g. 60">
+            </div>
+            
+            <div class="toolbar-section">
+                <label>Search Item:</label>
+                <input type="text" id="itemSearch" placeholder="Item number or description">
+            </div>
+            
+            <div class="toolbar-section">
+                <button class="filter-btn" onclick="applyFilters()">🔍 Apply Filters</button>
+                <button class="clear-btn" onclick="clearFilters()">✖ Clear</button>
+            </div>
         </div>
         
-        <div class="tabs" id="dashboard" style="display: none;">
-            <div class="tab-buttons">
-                <button class="tab-button active" data-tab="control">🎯 Control Tower</button>
-                <button class="tab-button" data-tab="order">📋 Order Today</button>
-                <button class="tab-button" data-tab="supplier">⚡ Supplier Urgency</button>
-                <button class="tab-button" data-tab="stockout">⚠️ Stockout Risk</button>
-                <button class="tab-button" data-tab="performance">📊 Supplier Performance</button>
-                <button class="tab-button" data-tab="quality">🔍 Data Quality</button>
+        <div class="stats-bar" id="statsBar" style="display: none;">
+            <div class="stat-item">
+                <div class="stat-value" id="totalItems">0</div>
+                <div class="stat-label">Total Items</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="filteredItems">0</div>
+                <div class="stat-label">Filtered</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="selectedItems">0</div>
+                <div class="stat-label">Selected</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="orderCount">0</div>
+                <div class="stat-label">Order</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="reviewCount">0</div>
+                <div class="stat-label">Review</div>
+            </div>
+        </div>
+        
+        <div class="work-area">
+            <div class="welcome" id="welcome">
+                <h2>Welcome to Work Mode</h2>
+                <p>Upload your buying sheet to start managing orders</p>
+                <button class="welcome-btn" onclick="openUploadModal()">📁 Upload Buying Sheet</button>
             </div>
             
-            <div class="tab-content active" id="control">
-                <div class="welcome">
-                    <h2>Control Tower</h2>
-                    <p>KPIs and high-level metrics will appear here after processing.</p>
-                </div>
+            <div class="table-container" id="tableContainer" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" class="checkbox" onclick="toggleSelectAll()"></th>
+                            <th>Item</th>
+                            <th>Description</th>
+                            <th>Supplier</th>
+                            <th>On Hand</th>
+                            <th>Available</th>
+                            <th>Open PO</th>
+                            <th>Days</th>
+                            <th>Conf</th>
+                            <th>Action</th>
+                            <th>Rec Qty</th>
+                            <th>Notes</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
             </div>
-            
-            <div class="tab-content" id="order">
-                <div class="welcome">
-                    <h2>Order Today Dashboard</h2>
-                    <p>Items requiring immediate action will appear here.</p>
-                </div>
-            </div>
-            
-            <div class="tab-content" id="supplier">
-                <div class="welcome">
-                    <h2>Supplier Urgency Analysis</h2>
-                    <p>Suppliers ranked by risk and urgency.</p>
-                </div>
-            </div>
-            
-            <div class="tab-content" id="stockout">
-                <div class="welcome">
-                    <h2>Stockout Risk Calendar</h2>
-                    <p>Items at risk of stockout within lead time.</p>
-                </div>
-            </div>
-            
-            <div class="tab-content" id="performance">
-                <div class="welcome">
-                    <h2>Supplier Performance</h2>
-                    <p>Actual lead times and on-time delivery metrics.</p>
-                    <p><em>Note: Requires PO Receipt History data (P4312)</em></p>
-                </div>
-            </div>
-            
-            <div class="tab-content" id="quality">
-                <div class="welcome">
-                    <h2>Data Quality Report</h2>
-                    <p>False shortages, stale POs, and data integrity checks.</p>
-                </div>
+        </div>
+    </div>
+    
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <h2>📁 Upload Data</h2>
+            <p style="margin-bottom: 15px;">Upload your buying sheet to begin</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+            <label for="fileInput" style="display: block; padding: 20px; border: 2px dashed #dee2e6; border-radius: 8px; text-align: center; cursor: pointer;">
+                Click to select file
+            </label>
+            <p id="fileName" style="margin-top: 10px; font-size: 14px; color: #666;"></p>
+            <div class="modal-buttons">
+                <button class="modal-btn" style="background: #6c757d; color: white;" onclick="closeUploadModal()">Cancel</button>
+                <button class="modal-btn" style="background: #28a745; color: white;" onclick="processUpload()" id="processBtn" disabled>Process</button>
             </div>
         </div>
     </div>
     
     <script>
-        // Global data storage
-        let buyingSheetData = null;
-        let poHistoryData = null;
-        let openPOData = null;
-        let processedData = null;
+        let allData = [];
+        let filteredData = [];
+        let itemNotes = {};
+        let itemStatus = {};
         
-        // File upload handlers
-        document.getElementById('buyingSheetInput').addEventListener('change', (e) => handleFileUpload(e, 'buyingSheet'));
-        document.getElementById('poHistoryInput').addEventListener('change', (e) => handleFileUpload(e, 'poHistory'));
-        document.getElementById('openPOInput').addEventListener('change', (e) => handleFileUpload(e, 'openPO'));
-        
-        // Tab switching
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', function() {
-                const tabName = this.getAttribute('data-tab');
-                switchTab(tabName);
-            });
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('processBtn').disabled = false;
+            }
         });
         
-        // Process button
-        document.getElementById('processBtn').addEventListener('click', processAllData);
+        function openUploadModal() {
+            document.getElementById('uploadModal').classList.add('active');
+        }
         
-        function handleFileUpload(event, type) {
-            const file = event.target.files[0];
-            if (!file) return;
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+        }
+        
+        function processUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
             
-            const statusDiv = document.getElementById(`${type}Status`);
-            const box = document.getElementById(`${type}Box`);
-            
-            statusDiv.textContent = `Reading ${file.name}...`;
-            statusDiv.className = 'file-status';
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
             
             const reader = new FileReader();
             
@@ -471,701 +542,237 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     
-                    // Find appropriate sheet
-                    let sheetName;
-                    if (type === 'buyingSheet') {
-                        sheetName = workbook.SheetNames.find(name => 
-                            name.toLowerCase().includes('buying') || 
-                            name.toLowerCase().includes('sheet1') ||
-                            name.toLowerCase() === 's&d'
-                        ) || workbook.SheetNames[0];
-                    } else {
-                        sheetName = workbook.SheetNames[0];
-                    }
+                    let sheetName = workbook.SheetNames.find(name => 
+                        name.toLowerCase().includes('buying') || 
+                        name.toLowerCase().includes('sheet1') ||
+                        name.toLowerCase() === 's&d'
+                    ) || workbook.SheetNames[0];
                     
                     const worksheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet);
                     
-                    // Store data
-                    if (type === 'buyingSheet') {
-                        buyingSheetData = jsonData;
-                    } else if (type === 'poHistory') {
-                        poHistoryData = jsonData;
-                    } else if (type === 'openPO') {
-                        openPOData = jsonData;
-                    }
+                    allData = processData(jsonData);
+                    filteredData = [...allData];
                     
-                    statusDiv.textContent = `✓ Loaded: ${jsonData.length} rows`;
-                    statusDiv.className = 'file-status success';
-                    box.classList.add('uploaded');
+                    populateSupplierFilter();
+                    renderTable();
+                    updateStats();
                     
-                    // Enable process button if buying sheet is loaded
-                    if (buyingSheetData) {
-                        document.getElementById('processBtn').disabled = false;
-                    }
+                    document.getElementById('welcome').style.display = 'none';
+                    document.getElementById('toolbar').style.display = 'flex';
+                    document.getElementById('statsBar').style.display = 'flex';
+                    document.getElementById('tableContainer').style.display = 'block';
+                    document.getElementById('exportBtn').disabled = false;
+                    
+                    closeUploadModal();
                     
                 } catch (error) {
-                    statusDiv.textContent = `✗ Error: ${error.message}`;
-                    statusDiv.className = 'file-status error';
-                    console.error('File processing error:', error);
+                    alert('Error processing file: ' + error.message);
+                    console.error(error);
                 }
-            };
-            
-            reader.onerror = function() {
-                statusDiv.textContent = '✗ Failed to read file';
-                statusDiv.className = 'file-status error';
             };
             
             reader.readAsArrayBuffer(file);
         }
         
-        function processAllData() {
-            if (!buyingSheetData) {
-                alert('Please upload a buying sheet first');
-                return;
-            }
-            
-            // Show loading state
-            document.getElementById('processBtn').textContent = '⏳ Processing...';
-            document.getElementById('processBtn').disabled = true;
-            
-            // Process in a timeout to allow UI to update
-            setTimeout(() => {
-                try {
-                    processedData = calculateDecisionIntelligence();
-                    generateDashboard();
-                    
-                    document.getElementById('dashboard').style.display = 'block';
-                    document.getElementById('processBtn').textContent = '✓ Data Processed Successfully';
-                    document.getElementById('processBtn').style.background = '#28a745';
-                    
-                    // Scroll to dashboard
-                    document.getElementById('dashboard').scrollIntoView({ behavior: 'smooth' });
-                    
-                } catch (error) {
-                    console.error('Processing error:', error);
-                    alert(`Error processing data: ${error.message}`);
-                    document.getElementById('processBtn').textContent = '🚀 Process Data & Generate Dashboard';
-                    document.getElementById('processBtn').disabled = false;
+        function processData(rawData) {
+            return rawData.map((row, index) => {
+                const totalOH = parseFloat(row['Total On Hand'] || row['Quantity On Hand'] || 0);
+                const available = parseFloat(row['Quantity Available'] || 0);
+                const openPO = parseFloat(row['Quantity On P.O.'] || 0);
+                const committed = parseFloat(row['Committed Quantity'] || 0);
+                const monthly = parseFloat(row['Average Usage'] || 0);
+                const annual = parseFloat(row['Previous 12 Mo Usage'] || 0);
+                const leadtime = parseInt(row['Leadtime'] || 14);
+                const rop = parseFloat(row['Reorder Point'] || 0);
+                const secondary = parseFloat(row['On Hand Secondary'] || 0);
+                const moq = parseFloat(row['MRQ (Min Release Qty)'] || 0);
+                
+                const daily = monthly / 30.4;
+                const ltd = daily * leadtime;
+                const netCov = totalOH + openPO - committed;
+                const daysSupply = daily > 0 ? Math.floor(netCov / daily) : 999;
+                
+                let conf = 0;
+                if (available < 0) conf += 20;
+                if (totalOH < rop) conf += 15;
+                if (netCov < ltd) conf += 25;
+                if (openPO === 0 && netCov < 0) conf += 20;
+                
+                const avgMonthly = annual / 12;
+                if (monthly > avgMonthly * 1.5) conf += 15;
+                else if (monthly > avgMonthly * 0.8) conf += 5;
+                
+                if (secondary > Math.abs(available) && available < 0) conf -= 25;
+                if (moq > ltd * 2) conf -= 5;
+                
+                conf = Math.max(0, Math.min(100, conf));
+                
+                let action;
+                if (conf >= 70) action = 'ORDER';
+                else if (conf >= 60) action = 'REVIEW';
+                else if (conf >= 40 && openPO > 0) action = 'EXPEDITE';
+                else action = 'NO_ACTION';
+                
+                let recQty = 0;
+                if (action === 'ORDER' || action === 'REVIEW') {
+                    const target = ltd * 1.1;
+                    recQty = Math.max(0, target - netCov);
+                    if (moq > 0 && recQty > 0) {
+                        recQty = Math.ceil(recQty / moq) * moq;
+                    }
                 }
-            }, 100);
+                
+                return {
+                    id: index,
+                    item: row['Item Number'] || '',
+                    description: (row['Description'] || '').substring(0, 40),
+                    supplier: row['Alpha Name'] || row['Supplier'] || 'Unknown',
+                    totalOH: Math.floor(totalOH),
+                    available: Math.floor(available),
+                    openPO: Math.floor(openPO),
+                    daysSupply: daysSupply < 999 ? daysSupply : '999+',
+                    confidence: Math.floor(conf),
+                    action: action,
+                    recQty: Math.floor(recQty),
+                    selected: false
+                };
+            });
         }
         
-        function calculateDecisionIntelligence() {
-            const results = [];
+        function populateSupplierFilter() {
+            const suppliers = [...new Set(allData.map(item => item.supplier))].sort();
+            const select = document.getElementById('supplierFilter');
+            select.innerHTML = '<option value="">All Suppliers</option>';
+            suppliers.forEach(supplier => {
+                const option = document.createElement('option');
+                option.value = supplier;
+                option.textContent = supplier;
+                select.appendChild(option);
+            });
+        }
+        
+        function applyFilters() {
+            const supplier = document.getElementById('supplierFilter').value;
+            const action = document.getElementById('actionFilter').value;
+            const minConf = parseInt(document.getElementById('confidenceFilter').value) || 0;
+            const search = document.getElementById('itemSearch').value.toLowerCase();
             
-            // Calculate supplier performance if PO history available
-            const supplierPerformance = poHistoryData ? calculateSupplierPerformance() : {};
-            
-            // Calculate PO status if open PO data available
-            const poStatus = openPOData ? calculatePOStatus() : {};
-            
-            buyingSheetData.forEach(row => {
-                const item = processItem(row, supplierPerformance, poStatus);
-                results.push(item);
+            filteredData = allData.filter(item => {
+                if (supplier && item.supplier !== supplier) return false;
+                if (action && item.action !== action) return false;
+                if (item.confidence < minConf) return false;
+                if (search && !item.item.toLowerCase().includes(search) && !item.description.toLowerCase().includes(search)) return false;
+                return true;
             });
             
-            return results;
+            renderTable();
+            updateStats();
         }
         
-        function processItem(row, supplierPerf, poStatus) {
-            // Extract values with safe defaults
-            const totalOH = parseFloat(row['Total On Hand'] || row['Quantity On Hand'] || 0);
-            const available = parseFloat(row['Quantity Available'] || 0);
-            const openPO = parseFloat(row['Quantity On P.O.'] || 0);
-            const committed = parseFloat(row['Committed Quantity'] || 0);
-            const monthly = parseFloat(row['Average Usage'] || 0);
-            const annual = parseFloat(row['Previous 12 Mo Usage'] || 0);
-            const leadtime = parseInt(row['Leadtime'] || 14);
-            const rop = parseFloat(row['Reorder Point'] || 0);
-            const secondary = parseFloat(row['On Hand Secondary'] || 0);
-            const moq = parseFloat(row['MRQ (Min Release Qty)'] || 0);
+        function clearFilters() {
+            document.getElementById('supplierFilter').value = '';
+            document.getElementById('actionFilter').value = '';
+            document.getElementById('confidenceFilter').value = '';
+            document.getElementById('itemSearch').value = '';
             
-            const itemNumber = row['Item Number'] || '';
-            const supplier = row['Alpha Name'] || row['Supplier'] || 'Unknown';
-            const description = (row['Description'] || '').substring(0, 40);
-            
-            // Calculate metrics
-            const daily = monthly / 30.4;
-            const ltd = daily * leadtime;
-            const netCov = totalOH + openPO - committed;
-            const daysSupply = daily > 0 ? Math.floor(netCov / daily) : 999;
-            
-            // Get actual lead time if available
-            const actualLT = supplierPerf[supplier]?.avgLeadTime || leadtime;
-            const supplierReliability = supplierPerf[supplier]?.onTimePercent || null;
-            
-            // Check for stale POs
-            const stalePO = poStatus[itemNumber]?.isStale || false;
-            
-            // Decision confidence calculation
-            let conf = 0;
-            const signals = [];
-            
-            if (available < 0) {
-                conf += 20;
-                signals.push('NEG_OH');
-            }
-            if (totalOH < rop) {
-                conf += 15;
-                signals.push('BELOW_ROP');
-            }
-            if (netCov < ltd) {
-                conf += 25;
-                signals.push('LEADTIME_EXPOSED');
-            }
-            if (openPO === 0 && netCov < 0) {
-                conf += 20;
-                signals.push('NO_PO');
-            } else if (openPO > 0 && openPO < ltd && netCov < 0) {
-                conf += 10;
-                signals.push('PO_INSUFFICIENT');
-            }
-            
-            // Mover classification
-            const avgMonthly = annual / 12;
-            let mover;
-            if (monthly > avgMonthly * 1.5) {
-                mover = 'FAST';
-                conf += 15;
-            } else if (monthly > avgMonthly * 0.8) {
-                mover = 'MEDIUM';
-                conf += 5;
-            } else if (monthly > 0) {
-                mover = 'SLOW';
-            } else {
-                mover = 'DORMANT';
-                conf -= 10;
-            }
-            signals.push(mover);
-            
-            // Secondary coverage
-            if (secondary > Math.abs(available) && available < 0) {
-                conf -= 25;
-                signals.push('SECONDARY_COVERS');
-            }
-            
-            // MOQ constraint
-            if (moq > ltd * 2) {
-                conf -= 5;
-                signals.push('MRQ_CONSTRAINT');
-            }
-            
-            // Stale PO penalty
-            if (stalePO) {
-                conf += 5;
-                signals.push('STALE_PO');
-            }
-            
-            // Supplier reliability adjustment
-            if (supplierReliability && supplierReliability < 70) {
-                conf += 10;
-                signals.push('UNRELIABLE_SUPPLIER');
-            }
-            
-            conf = Math.max(0, Math.min(100, conf));
-            
-            // Action determination
-            let action;
-            if (conf >= 70) {
-                action = 'ORDER';
-            } else if (conf >= 60) {
-                action = 'REVIEW';
-            } else if (conf >= 40 && openPO > 0) {
-                action = 'EXPEDITE';
-            } else {
-                action = 'NO_ACTION';
-            }
-            
-            // Recommended quantity
-            let recQty = 0;
-            if (action === 'ORDER' || action === 'REVIEW') {
-                const target = ltd * 1.1;
-                recQty = Math.max(0, target - netCov);
-                if (moq > 0 && recQty > 0) {
-                    recQty = Math.ceil(recQty / moq) * moq;
-                }
-            }
-            
-            return {
-                item: itemNumber,
-                supplier: supplier,
-                description: description,
-                totalOH: Math.floor(totalOH),
-                available: Math.floor(available),
-                openPO: Math.floor(openPO),
-                daysSupply: daysSupply < 999 ? daysSupply : '999+',
-                confidence: Math.floor(conf),
-                action: action,
-                recQty: Math.floor(recQty),
-                signals: signals.join(' | '),
-                mover: mover,
-                actualLT: actualLT,
-                promisedLT: leadtime,
-                supplierReliability: supplierReliability,
-                stalePO: stalePO
-            };
+            filteredData = [...allData];
+            renderTable();
+            updateStats();
         }
         
-        function calculateSupplierPerformance() {
-            if (!poHistoryData) return {};
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
             
-            const performance = {};
-            
-            poHistoryData.forEach(row => {
-                const supplier = row['Supplier Name'] || row['Alpha Name'] || 'Unknown';
-                const poDate = new Date(row['PO Date'] || row['Order Date']);
-                const receiptDate = new Date(row['Receipt Date'] || row['Actual Receipt Date']);
+            filteredData.forEach(item => {
+                const row = document.createElement('tr');
+                if (item.selected) row.classList.add('highlight-row');
                 
-                if (isNaN(poDate.getTime()) || isNaN(receiptDate.getTime())) return;
+                const actionBadge = item.action === 'ORDER' ? 'badge-danger' : 
+                                   item.action === 'REVIEW' ? 'badge-warning' : 
+                                   item.action === 'EXPEDITE' ? 'badge-info' : 'badge-secondary';
                 
-                const actualLT = Math.floor((receiptDate - poDate) / (1000 * 60 * 60 * 24));
-                const promisedLT = parseInt(row['Leadtime'] || row['Lead Time'] || 0);
+                const statusText = itemStatus[item.id] || '-';
+                const statusClass = statusText === 'ORDERED' ? 'badge-success' : 
+                                   statusText === 'SKIP' ? 'badge-secondary' : '';
                 
-                if (!performance[supplier]) {
-                    performance[supplier] = {
-                        receipts: [],
-                        onTime: 0,
-                        late: 0
-                    };
-                }
-                
-                performance[supplier].receipts.push(actualLT);
-                
-                if (actualLT <= promisedLT + 2) {
-                    performance[supplier].onTime++;
-                } else {
-                    performance[supplier].late++;
-                }
-            });
-            
-            // Calculate averages
-            Object.keys(performance).forEach(supplier => {
-                const receipts = performance[supplier].receipts;
-                const sum = receipts.reduce((a, b) => a + b, 0);
-                performance[supplier].avgLeadTime = Math.round(sum / receipts.length);
-                
-                const total = performance[supplier].onTime + performance[supplier].late;
-                performance[supplier].onTimePercent = Math.round((performance[supplier].onTime / total) * 100);
-            });
-            
-            return performance;
-        }
-        
-        function calculatePOStatus() {
-            if (!openPOData) return {};
-            
-            const status = {};
-            const today = new Date();
-            
-            openPOData.forEach(row => {
-                const item = row['Item Number'] || row['Short Item'] || '';
-                const poDate = new Date(row['PO Date'] || row['Order Date']);
-                const promisedDate = new Date(row['Promised Date'] || row['Request Date']);
-                
-                if (isNaN(poDate.getTime())) return;
-                
-                const ageInDays = Math.floor((today - poDate) / (1000 * 60 * 60 * 24));
-                const isPastDue = !isNaN(promisedDate.getTime()) && promisedDate < today;
-                const isStale = ageInDays > 60;
-                
-                if (!status[item]) {
-                    status[item] = {
-                        ageInDays: ageInDays,
-                        isPastDue: isPastDue,
-                        isStale: isStale,
-                        promisedDate: promisedDate
-                    };
-                }
-            });
-            
-            return status;
-        }
-        
-        function generateDashboard() {
-            generateControlTower();
-            generateOrderToday();
-            generateSupplierUrgency();
-            generateStockoutRisk();
-            generateSupplierPerformance();
-            generateDataQuality();
-        }
-        
-        function generateControlTower() {
-            const total = processedData.length;
-            const highRisk = processedData.filter(i => i.confidence >= 70).length;
-            const orderToday = processedData.filter(i => i.action === 'ORDER').length;
-            const review = processedData.filter(i => i.action === 'REVIEW').length;
-            const expedite = processedData.filter(i => i.action === 'EXPEDITE').length;
-            
-            let html = `
-                <h2>Control Tower - Overview</h2>
-                <div class="kpi-grid">
-                    <div class="kpi-card primary">
-                        <div class="kpi-value">${total}</div>
-                        <div class="kpi-label">Total Items</div>
-                    </div>
-                    <div class="kpi-card danger">
-                        <div class="kpi-value">${highRisk}</div>
-                        <div class="kpi-label">High Risk (≥70)</div>
-                    </div>
-                    <div class="kpi-card success">
-                        <div class="kpi-value">${orderToday}</div>
-                        <div class="kpi-label">Order Today</div>
-                    </div>
-                    <div class="kpi-card warning">
-                        <div class="kpi-value">${review}</div>
-                        <div class="kpi-label">Review</div>
-                    </div>
-                    <div class="kpi-card info">
-                        <div class="kpi-value">${expedite}</div>
-                        <div class="kpi-label">Expedite</div>
-                    </div>
-                </div>
-                
-                <h3>Top Priority Items</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Description</th>
-                            <th>Supplier</th>
-                            <th>Confidence</th>
-                            <th>Action</th>
-                            <th>Rec Qty</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            const topItems = processedData
-                .filter(i => i.confidence >= 60)
-                .sort((a, b) => b.confidence - a.confidence)
-                .slice(0, 50);
-            
-            topItems.forEach(item => {
-                html += `
-                    <tr>
-                        <td>${item.item}</td>
-                        <td>${item.description}</td>
-                        <td>${item.supplier}</td>
-                        <td><span class="badge badge-${item.confidence >= 70 ? 'danger' : 'warning'}">${item.confidence}</span></td>
-                        <td><span class="badge badge-${item.action === 'ORDER' ? 'danger' : item.action === 'REVIEW' ? 'warning' : 'info'}">${item.action}</span></td>
-                        <td>${item.recQty > 0 ? item.recQty : '-'}</td>
-                    </tr>
+                row.innerHTML = `
+                    <td><input type="checkbox" class="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleSelect(${item.id})"></td>
+                    <td>${item.item}</td>
+                    <td>${item.description}</td>
+                    <td>${item.supplier}</td>
+                    <td>${item.totalOH}</td>
+                    <td>${item.available}</td>
+                    <td>${item.openPO}</td>
+                    <td>${item.daysSupply}</td>
+                    <td><span class="badge ${actionBadge}">${item.confidence}</span></td>
+                    <td><span class="badge ${actionBadge}">${item.action}</span></td>
+                    <td><strong>${item.recQty > 0 ? item.recQty : '-'}</strong></td>
+                    <td><input type="text" class="notes-input" value="${itemNotes[item.id] || ''}" onchange="saveNote(${item.id}, this.value)" placeholder="Add note..."></td>
+                    <td><span class="badge ${statusClass}">${statusText}</span></td>
                 `;
+                
+                tbody.appendChild(row);
             });
-            
-            html += `
-                    </tbody>
-                </table>
-            `;
-            
-            document.getElementById('control').innerHTML = html;
         }
         
-        function generateOrderToday() {
-            const orderItems = processedData
-                .filter(i => i.action === 'ORDER')
-                .sort((a, b) => b.confidence - a.confidence);
-            
-            if (orderItems.length === 0) {
-                document.getElementById('order').innerHTML = `
-                    <div class="welcome">
-                        <h2>✅ No Orders Required Today</h2>
-                        <p>All items have sufficient coverage through their lead times.</p>
-                    </div>
-                `;
-                return;
+        function toggleSelectAll() {
+            const checked = document.getElementById('selectAll').checked;
+            filteredData.forEach(item => {
+                item.selected = checked;
+                const original = allData.find(i => i.id === item.id);
+                if (original) original.selected = checked;
+            });
+            renderTable();
+            updateStats();
+        }
+        
+        function toggleSelect(id) {
+            const item = allData.find(i => i.id === id);
+            if (item) {
+                item.selected = !item.selected;
+                const filtered = filteredData.find(i => i.id === id);
+                if (filtered) filtered.selected = item.selected;
             }
-            
-            let html = `
-                <h2>📋 Items Requiring Orders (${orderItems.length} items)</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Description</th>
-                            <th>Supplier</th>
-                            <th>On Hand</th>
-                            <th>Open PO</th>
-                            <th>Days</th>
-                            <th>Confidence</th>
-                            <th>Rec Qty</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            orderItems.forEach(item => {
-                html += `
-                    <tr>
-                        <td>${item.item}</td>
-                        <td>${item.description}</td>
-                        <td>${item.supplier}</td>
-                        <td>${item.totalOH}</td>
-                        <td>${item.openPO}</td>
-                        <td>${item.daysSupply}</td>
-                        <td><span class="badge badge-danger">${item.confidence}</span></td>
-                        <td><strong>${item.recQty}</strong></td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                    </tbody>
-                </table>
-            `;
-            
-            document.getElementById('order').innerHTML = html;
+            updateStats();
         }
         
-        function generateSupplierUrgency() {
-            const suppliers = {};
-            
-            processedData.forEach(item => {
-                if (!suppliers[item.supplier]) {
-                    suppliers[item.supplier] = {
-                        items: [],
-                        highConf: 0,
-                        fastMovers: 0,
-                        score: 0
-                    };
-                }
-                
-                suppliers[item.supplier].items.push(item);
-                
-                if (item.confidence >= 70) {
-                    suppliers[item.supplier].highConf++;
-                    suppliers[item.supplier].score += 10;
-                }
-                
-                if (item.mover === 'FAST') {
-                    suppliers[item.supplier].fastMovers++;
-                    suppliers[item.supplier].score += 5;
-                }
-            });
-            
-            const sorted = Object.entries(suppliers).sort((a, b) => b[1].score - a[1].score);
-            
-            let html = `<h2>⚡ Supplier Urgency Ranking</h2>`;
-            
-            sorted.slice(0, 20).forEach(([supplier, data]) => {
-                const score = data.score;
-                let level, levelClass;
-                
-                if (score > 50) {
-                    level = 'CRITICAL';
-                    levelClass = 'urgency-critical';
-                } else if (score > 30) {
-                    level = 'HIGH';
-                    levelClass = 'urgency-high';
-                } else if (score > 15) {
-                    level = 'MEDIUM';
-                    levelClass = 'urgency-medium';
-                } else {
-                    level = 'LOW';
-                    levelClass = 'urgency-low';
-                }
-                
-                html += `
-                    <div class="supplier-card">
-                        <div class="supplier-header">
-                            <div class="supplier-name">${supplier}</div>
-                            <div class="urgency-badge ${levelClass}">${level} (${score})</div>
-                        </div>
-                        <div style="color: #666; font-size: 14px;">
-                            ${data.highConf} high-risk | ${data.fastMovers} fast movers | ${data.items.length} total items
-                        </div>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('supplier').innerHTML = html;
+        function saveNote(id, note) {
+            itemNotes[id] = note;
         }
         
-        function generateStockoutRisk() {
-            const stockoutItems = processedData
-                .filter(i => i.daysSupply !== '999+' && i.daysSupply < 30)
-                .sort((a, b) => a.daysSupply - b.daysSupply);
-            
-            if (stockoutItems.length === 0) {
-                document.getElementById('stockout').innerHTML = `
-                    <div class="welcome">
-                        <h2>✅ No Imminent Stockout Risk</h2>
-                        <p>All items have more than 30 days of supply.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = `
-                <h2>⚠️ Stockout Risk Calendar (${stockoutItems.length} items)</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Description</th>
-                            <th>Supplier</th>
-                            <th>Days Until Stockout</th>
-                            <th>Confidence</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            stockoutItems.forEach(item => {
-                html += `
-                    <tr>
-                        <td>${item.item}</td>
-                        <td>${item.description}</td>
-                        <td>${item.supplier}</td>
-                        <td><span class="badge ${item.daysSupply < 7 ? 'badge-danger' : item.daysSupply < 14 ? 'badge-warning' : 'badge-info'}">${item.daysSupply} days</span></td>
-                        <td>${item.confidence}</td>
-                        <td><span class="badge badge-${item.action === 'ORDER' ? 'danger' : 'warning'}">${item.action}</span></td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                    </tbody>
-                </table>
-            `;
-            
-            document.getElementById('stockout').innerHTML = html;
+        function updateStats() {
+            document.getElementById('totalItems').textContent = allData.length;
+            document.getElementById('filteredItems').textContent = filteredData.length;
+            document.getElementById('selectedItems').textContent = allData.filter(i => i.selected).length;
+            document.getElementById('orderCount').textContent = filteredData.filter(i => i.action === 'ORDER').length;
+            document.getElementById('reviewCount').textContent = filteredData.filter(i => i.action === 'REVIEW').length;
         }
         
-        function generateSupplierPerformance() {
-            if (!poHistoryData) {
-                document.getElementById('performance').innerHTML = `
-                    <div class="welcome">
-                        <h2>📊 Supplier Performance</h2>
-                        <p>Upload PO Receipt History (P4312) to see supplier performance metrics.</p>
-                        <ul style="text-align: left; max-width: 500px; margin: 20px auto;">
-                            <li>Actual vs Promised Lead Time</li>
-                            <li>On-Time Delivery Percentage</li>
-                            <li>Supplier Reliability Scores</li>
-                            <li>Performance Trends</li>
-                        </ul>
-                    </div>
-                `;
-                return;
-            }
+        function exportToExcel() {
+            const exportData = filteredData.map(item => ({
+                'Selected': item.selected ? 'YES' : 'NO',
+                'Item Number': item.item,
+                'Description': item.description,
+                'Supplier': item.supplier,
+                'On Hand': item.totalOH,
+                'Available': item.available,
+                'Open PO': item.openPO,
+                'Days Supply': item.daysSupply,
+                'Confidence': item.confidence,
+                'Action': item.action,
+                'Recommended Qty': item.recQty,
+                'Notes': itemNotes[item.id] || '',
+                'Status': itemStatus[item.id] || ''
+            }));
             
-            const supplierPerf = calculateSupplierPerformance();
-            const sorted = Object.entries(supplierPerf).sort((a, b) => a[1].onTimePercent - b[1].onTimePercent);
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Planning Sheet");
             
-            let html = `
-                <h2>📊 Supplier Performance Analysis</h2>
-                <p style="margin-bottom: 20px; color: #666;">Based on ${poHistoryData.length} receipts from PO history</p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Supplier</th>
-                            <th>Avg Lead Time (days)</th>
-                            <th>On-Time Deliveries</th>
-                            <th>Late Deliveries</th>
-                            <th>On-Time %</th>
-                            <th>Performance</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            sorted.forEach(([supplier, data]) => {
-                const onTimePct = data.onTimePercent;
-                let perfBadge;
-                
-                if (onTimePct >= 90) {
-                    perfBadge = '<span class="badge badge-success">EXCELLENT</span>';
-                } else if (onTimePct >= 75) {
-                    perfBadge = '<span class="badge badge-info">GOOD</span>';
-                } else if (onTimePct >= 60) {
-                    perfBadge = '<span class="badge badge-warning">FAIR</span>';
-                } else {
-                    perfBadge = '<span class="badge badge-danger">POOR</span>';
-                }
-                
-                html += `
-                    <tr>
-                        <td>${supplier}</td>
-                        <td>${data.avgLeadTime}</td>
-                        <td>${data.onTime}</td>
-                        <td>${data.late}</td>
-                        <td><strong>${onTimePct}%</strong></td>
-                        <td>${perfBadge}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                    </tbody>
-                </table>
-            `;
-            
-            document.getElementById('performance').innerHTML = html;
-        }
-        
-        function generateDataQuality() {
-            const negAvail = processedData.filter(i => i.available < 0).length;
-            const secondaryCovers = processedData.filter(i => i.signals.includes('SECONDARY_COVERS')).length;
-            const noPO = processedData.filter(i => i.confidence > 60 && i.openPO === 0).length;
-            const stalePOs = openPOData ? processedData.filter(i => i.stalePO).length : 0;
-            
-            let html = `
-                <h2>🔍 Data Quality Report</h2>
-                <div class="kpi-grid">
-                    <div class="kpi-card danger">
-                        <div class="kpi-value">${negAvail}</div>
-                        <div class="kpi-label">Negative Available</div>
-                    </div>
-                    <div class="kpi-card info">
-                        <div class="kpi-value">${secondaryCovers}</div>
-                        <div class="kpi-label">Secondary Covers</div>
-                    </div>
-                    <div class="kpi-card warning">
-                        <div class="kpi-value">${noPO}</div>
-                        <div class="kpi-label">No PO With Need</div>
-                    </div>
-            `;
-            
-            if (openPOData) {
-                html += `
-                    <div class="kpi-card warning">
-                        <div class="kpi-value">${stalePOs}</div>
-                        <div class="kpi-label">Stale POs (60+ days)</div>
-                    </div>
-                `;
-            }
-            
-            html += `
-                </div>
-                <div style="margin-top: 30px; padding: 20px; background: #e3f2fd; border-radius: 8px;">
-                    <h3>📌 Key Insights</h3>
-                    <p><strong>${secondaryCovers} items</strong> show negative available BUT have secondary inventory that covers.</p>
-                    <p>These are <strong>FALSE SHORTAGES</strong> - secondary location has stock.</p>
-            `;
-            
-            if (openPOData) {
-                html += `<p><strong>${stalePOs} open POs</strong> are more than 60 days old and should be reviewed or closed.</p>`;
-            }
-            
-            html += `
-                </div>
-            `;
-            
-            document.getElementById('quality').innerHTML = html;
-        }
-        
-        function switchTab(tabName) {
-            // Update buttons
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-            
-            // Update content
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            document.getElementById(tabName).classList.add('active');
+            const today = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `Planning_Sheet_${today}.xlsx`);
         }
     </script>
 </body>
