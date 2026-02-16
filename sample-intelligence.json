@@ -1,0 +1,23 @@
+{
+  "version": "3.5",
+  "lastUpdated": "2026-02-16",
+  "itemCount": 0,
+  "intelligence": {
+    "_README": "This is a sample intelligence file. Replace with your actual data.",
+    "_EXAMPLE_12345_ITEM001": {
+      "avgQty": 500,
+      "typicalShipTo": "Plant A",
+      "lastOrderDate": "2026-01-15",
+      "orderCount": 12
+    },
+    "_INSTRUCTIONS": {
+      "note": "Each key should be in format: SUPPLIER_ITEM",
+      "supplier": "Use the supplier number (AN8 or Address Number)",
+      "item": "Use the Short Item Number",
+      "avgQty": "Average order quantity (number)",
+      "typicalShipTo": "Most common ship-to location (string)",
+      "lastOrderDate": "Most recent order date (YYYY-MM-DD or Julian)",
+      "orderCount": "Total number of historical orders (number)"
+    }
+  }
+}
