@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 Raynor Planning Intelligence v3.7</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container { max-width: 1900px; margin: 0 auto; }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header-left .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: #e74c3c;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-upload { background: #667eea; color: white; }
+        .btn-save { background: #f39c12; color: white; }
+        .btn-history { background: #3498db; color: white; }
+        .btn-export { background: #28a745; color: white; }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            background: white;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 0;
+            display: none;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #dee2e6;
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            background: #f8f9fa;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            margin-bottom: -2px;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 30px;
+            min-height: 500px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid;
+        }
+
+        .kpi-card.primary { border-color: #667eea; }
+        .kpi-card.danger { border-color: #e74c3c; }
+        .kpi-card.success { border-color: #28a745; }
+        .kpi-card.warning { border-color: #f39c12; }
+        .kpi-card.info { border-color: #3498db; }
+
+        .kpi-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .kpi-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Supplier Cards */
+        .supplier-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .supplier-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .supplier-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .supplier-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .urgency-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .urgency-critical { background: #e74c3c; color: white; }
+        .urgency-high { background: #f39c12; color: white; }
+        .urgency-medium { background: #3498db; color: white; }
+        .urgency-low { background: #6c757d; color: white; }
+
+        .toolbar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .toolbar-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .toolbar-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toolbar label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .toolbar select, .toolbar input {
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .clear-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .bulk-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn-ordered { background: #28a745; color: white; }
+        .btn-pending { background: #f39c12; color: white; }
+        .btn-skip { background: #6c757d; color: white; }
+        .btn-clear-status { background: #e74c3c; color: white; }
+
+        .stats-bar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: none;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 5px 15px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table thead {
+            background: #667eea;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        table th {
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 12px;
+        }
+
+        table tbody tr:hover {
+            background: #f8f9ff;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-danger { background: #e74c3c; color: white; }
+        .badge-warning { background: #f39c12; color: white; }
+        .badge-success { background: #28a745; color: white; }
+        .badge-info { background: #3498db; color: white; }
+        .badge-secondary { background: #6c757d; color: white; }
+
+        .notes-input {
+            width: 180px;
+            padding: 6px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .status-select {
+            padding: 4px 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .file-upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .file-upload-box {
+            padding: 20px;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload-box:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .file-upload-box.uploaded {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .welcome {
+            text-align: center;
+            padding: 100px 20px;
+            color: #666;
+        }
+
+        .welcome h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+
+        .welcome-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .highlight-row { background: #fff3cd !important; }
+        .row-ordered { background: #d4edda !important; }
+        .row-pending { background: #fff3cd !important; }
+        .row-skip { background: #e2e3e5 !important; }
+
+        .save-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .text-danger {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .po-info {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .past-due {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .table-wrapper {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+    
+        .has-history {
+            background: #faf5ff !important;
+            color: #5b21b6;
+        }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>🎯 Raynor Planning Intelligence<span class="version-badge">v3.7 Intelligence</span></h1>
+                <p class="subtitle">Planning Intelligence Windows | Out of Stock | Order Today | Supplier Urgency</p>
+            </div>
+            <div class="header-right">
+                <button class="header-btn btn-upload" onclick="openUploadModal()">📁 Upload</button>
+                <button class="header-btn btn-save" onclick="saveSession()" id="saveBtn" disabled>💾 Save</button>
+                <button class="header-btn btn-history" onclick="openHistoryModal()" id="historyBtn" disabled>📜 History</button>
+                <button class="header-btn btn-export" onclick="exportToExcel()" id="exportBtn" disabled>⬇️ Export</button>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation" id="tabNavigation">
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="workmode" onclick="switchTab('workmode')">🛠️ Work Mode</button>
+                <button class="tab-button" data-tab="ordertoday" onclick="switchTab('ordertoday')">📋 Order Today</button>
+                <button class="tab-button" data-tab="stockout" onclick="switchTab('stockout')">⚠️ Out of Stock</button>
+                <button class="tab-button" data-tab="urgency" onclick="switchTab('urgency')">⚡ Supplier Urgency</button>
+                <button class="tab-button" data-tab="overview" onclick="switchTab('overview')">📊 Overview</button>
+            </div>
+        </div>
+
+        <!-- Work Mode Tab -->
+        <div class="tab-content active" id="workmode">
+            <div class="toolbar" id="toolbar">
+                <div class="toolbar-row">
+                    <div class="toolbar-section">
+                        <label>Supplier:</label>
+                        <select id="supplierFilter">
+                            <option value="">All Suppliers</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-section">
+                        <label>Ship-To:</label>
+                        <select id="shipToFilter">
+                            <option value="">All Locations</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-section">
+                        <label>Action:</label>
+                        <select id="actionFilter">
+                            <option value="">All Actions</option>
+                            <option value="ORDER">Order</option>
+                            <option value="REVIEW">Review</option>
+                            <option value="EXPEDITE">Expedite</option>
+                            <option value="NO_ACTION">No Action</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-section">
+                        <label>Status:</label>
+                        <select id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="ORDERED">Ordered</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="SKIP">Skip</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-section">
+                        <label>Min Conf:</label>
+                        <input type="number" id="confidenceFilter" min="0" max="100" placeholder="60" style="width: 70px;">
+                    </div>
+
+                    <div class="toolbar-section">
+                        <label>Search:</label>
+                        <input type="text" id="itemSearch" placeholder="Item #">
+                    </div>
+
+                    <div class="toolbar-section">
+                        <button class="filter-btn" onclick="applyFilters()">🔍 Apply</button>
+                        <button class="clear-btn" onclick="clearFilters()">✖ Clear</button>
+                    </div>
+                </div>
+
+                <div class="bulk-actions">
+                    <label><span id="selectedCount">0</span> selected:</label>
+                    <button class="bulk-btn btn-ordered" onclick="bulkSetStatus('ORDERED')">✓ Mark Ordered</button>
+                    <button class="bulk-btn btn-pending" onclick="bulkSetStatus('PENDING')">⏳ Mark Pending</button>
+                    <button class="bulk-btn btn-skip" onclick="bulkSetStatus('SKIP')">⊘ Mark Skip</button>
+                    <button class="bulk-btn btn-clear-status" onclick="bulkSetStatus('')">✖ Clear Status</button>
+                
+                <div class="file-upload-box" id="pastPOBox" onclick="document.getElementById('pastPOInput').click()">
+                    <div style="font-size: 32px; margin-bottom: 10px;">📜</div>
+                    <div style="font-weight: bold;">Past POs (F4311)</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Historical orders for intelligence</div>
+                    <div id="pastPOStatus" style="margin-top: 10px; font-size: 12px; color: #28a745;"></div>
+                    <input type="file" id="pastPOInput" accept=".csv,.xlsx,.xls" style="display: none;">
+                </div>
+            </div>
+
+            <div class="stats-bar" id="statsBar">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalItems">0</div>
+                    <div class="stat-label">Total Items</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="filteredItems">0</div>
+                    <div class="stat-label">Showing</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="selectedItems">0</div>
+                    <div class="stat-label">Selected</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="orderedCount">0</div>
+                    <div class="stat-label">Ordered</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="pendingCount">0</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="skipCount">0</div>
+                    <div class="stat-label">Skipped</div>
+                </div>
+            </div>
+
+            <div class="welcome" id="welcome">
+                <h2>Welcome to Planning Intelligence</h2>
+                <p>Upload your files to begin</p>
+                <button class="welcome-btn" onclick="openUploadModal()">📁 Upload Files</button>
+            </div>
+
+            <div class="table-wrapper" id="tableContainer" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" class="checkbox" onclick="toggleSelectAll()"></th>
+                            <th>Item</th>
+                            <th>Description</th>
+                            <th>Supplier</th>
+                            <th>Ship-To</th>
+                            <th>ROP</th>
+                            <th>OH</th>
+                            <th>Avail</th>
+                            <th>Open PO</th>
+                            <th>PO Arrives</th>
+                            <th>Days</th>
+                            <th>Conf</th>
+                            <th>Action</th>
+                            <th>Rec</th>
+                            <th title="Average order quantity from historical POs">Avg Qty</th>
+                            <th title="Most common ship-to plant">Typical Plant</th>
+                            <th title="Last order date">Last Ord</th>
+                            <th>Notes</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Order Today Tab -->
+        <div class="tab-content" id="ordertoday">
+            <div id="orderTodayContent">
+                <div class="welcome">
+                    <h2>📋 Order Today</h2>
+                    <p>Upload data to see items requiring immediate PO action</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Out of Stock Tab -->
+        <div class="tab-content" id="stockout">
+            <div id="stockoutContent">
+                <div class="welcome">
+                    <h2>⚠️ Stockout Risk</h2>
+                    <p>Upload data to see items at risk of stocking out</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supplier Urgency Tab -->
+        <div class="tab-content" id="urgency">
+            <div id="urgencyContent">
+                <div class="welcome">
+                    <h2>⚡ Supplier Urgency</h2>
+                    <p>Upload data to see supplier-level risk analysis</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overview Tab -->
+        <div class="tab-content" id="overview">
+            <div id="overviewContent">
+                <div class="welcome">
+                    <h2>📊 Dashboard Overview</h2>
+                    <p>Upload data to see comprehensive analytics</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="save-indicator" id="saveIndicator">✓ Session Saved</div>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <h2>📁 Upload Planning Files</h2>
+            <div id="uploadAlert" style="display: none;"></div>
+
+            <div class="file-upload-grid">
+                <div class="file-upload-box" id="buyingSheetBox" onclick="document.getElementById('buyingSheetInput').click()">
+                    <div style="font-size: 24px; margin-bottom: 10px;">📊</div>
+                    <div style="font-weight: bold;">Buying Sheet</div>
+                    <div style="font-size: 12px; color: #666;">Required</div>
+                    <div id="buyingSheetName" style="font-size: 11px; margin-top: 5px; color: #28a745;"></div>
+                </div>
+
+                <div class="file-upload-box" id="openPOBox" onclick="document.getElementById('openPOInput').click()">
+                    <div style="font-size: 24px; margin-bottom: 10px;">📦</div>
+                    <div style="font-weight: bold;">Open POs</div>
+                    <div style="font-size: 12px; color: #666;">Optional</div>
+                    <div id="openPOName" style="font-size: 11px; margin-top: 5px; color: #28a745;"></div>
+                </div>
+            </div>
+
+            <input type="file" id="buyingSheetInput" accept=".xlsx,.xls,.csv" onchange="handleBuyingSheetUpload(event)">
+            <input type="file" id="openPOInput" accept=".xlsx,.xls,.csv" onchange="handleOpenPOUpload(event)">
+            <input type="file" id="pastPOInput" accept=".xlsx,.xls,.csv" onchange="handlePastPOUpload(event)">
+
+            <div class="modal-buttons">
+                <button class="modal-btn" style="background: #6c757d; color: white;" onclick="closeUploadModal()">Cancel</button>
+                <button class="modal-btn" style="background: #28a745; color: white;" onclick="processAllFiles()" id="processBtn" disabled>Process Files</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <h2>📜 Order History</h2>
+            <div id="historyContent" style="max-height: 400px; overflow-y: auto;"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn" style="background: #e74c3c; color: white;" onclick="clearHistory()">Clear History</button>
+                <button class="modal-btn" style="background: #28a745; color: white;" onclick="exportHistory()">Export History</button>
+                <button class="modal-btn" style="background: #6c757d; color: white;" onclick="closeHistoryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Historical Intelligence Storage
+        let historyIntel = {};
+        let intelligenceLastUpdated = null;
+        
+        // Load intelligence from localStorage on page load
+        function loadSavedIntelligence() {
+            const stored = localStorage.getItem('raynor_v37_intelligence');
+            if (stored) {
+                try {
+                    const data = JSON.parse(stored);
+                    historyIntel = data.intelligence || {};
+                    intelligenceLastUpdated = data.lastUpdated || null;
+                    console.log('Loaded', Object.keys(historyIntel).length, 'intelligence records');
+                    return true;
+                } catch (e) {
+                    console.error('Error loading intelligence:', e);
+                }
+            }
+            return false;
+        }
+        
+        function saveIntelligence() {
+            const data = {
+                intelligence: historyIntel,
+                lastUpdated: new Date().toISOString().split('T')[0],
+                version: '3.7'
+            };
+            localStorage.setItem('raynor_v37_intelligence', JSON.stringify(data));
+            intelligenceLastUpdated = data.lastUpdated;
+            console.log('Saved', Object.keys(historyIntel).length, 'intelligence records');
+        }
+
+        let allData = [];
+        let filteredData = [];
+        let itemNotes = {};
+        let itemStatus = {};
+        let orderHistory = [];
+        let buyingSheetData = null;
+        let openPOData = null;
+        let supplierMaster = {};
+
+        const SESSION_KEY = 'raynor_planning_session_v34';
+        const HISTORY_KEY = 'raynor_order_history_v34';
+
+        window.addEventListener('load', function() {
+            loadSession();
+            loadHistory();
+        });
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            // Regenerate intelligence views if not work mode
+            if (tabName !== 'workmode' && allData.length > 0) {
+                if (tabName === 'ordertoday') generateOrderToday();
+                else if (tabName === 'stockout') generateStockoutRisk();
+                else if (tabName === 'urgency') generateSupplierUrgency();
+                else if (tabName === 'overview') generateOverview();
+            }
+        }
+
+        function openUploadModal() {
+            const session = localStorage.getItem(SESSION_KEY);
+            if (session && allData.length > 0) {
+                document.getElementById('uploadAlert').innerHTML = `
+                    <div class="alert alert-info">
+                        ℹ️ <strong>Session found!</strong> Upload new files to start fresh, or cancel to continue.
+                    </div>
+                `;
+                document.getElementById('uploadAlert').style.display = 'block';
+            }
+            document.getElementById('uploadModal').classList.add('active');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+        }
+
+        function handleBuyingSheetUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('buyingSheetName').textContent = file.name;
+                document.getElementById('buyingSheetBox').classList.add('uploaded');
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        buyingSheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+                        document.getElementById('processBtn').disabled = false;
+                    } catch (error) {
+                        alert('Error reading buying sheet: ' + error.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function handlePastPOUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('pastPOStatus').textContent = 'Loading...';
+                document.getElementById('pastPOBox').classList.add('uploaded');
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        pastPOData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+                        document.getElementById('pastPOStatus').textContent = `✓ ${pastPOData.length} records loaded`;
+
+                        // Build intelligence immediately
+                        buildHistoricalIntel(pastPOData);
+                        alert(`✅ Intelligence built from ${pastPOData.length} Past PO records!\n${Object.keys(historyIntel).length} item/supplier combinations learned.`);
+                    } catch (error) {
+                        document.getElementById('pastPOStatus').textContent = '❌ Error';
+                        alert('Error reading Past POs: ' + error.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function handleOpenPOUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('openPOName').textContent = file.name;
+                document.getElementById('openPOBox').classList.add('uploaded');
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        openPOData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                    } catch (error) {
+                        alert('Error reading open PO file: ' + error.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function processAllFiles() {
+            if (!buyingSheetData) {
+                alert('Please upload buying sheet');
+                return;
+            }
+
+            try {
+                buildSupplierMaster(buyingSheetData);
+
+                let poLookup = {};
+                if (openPOData) {
+                    poLookup = processOpenPOs(openPOData);
+                }
+
+                allData = processBuyingSheet(buyingSheetData, poLookup);
+                filteredData = [...allData];
+
+                itemNotes = {};
+                itemStatus = {};
+
+                populateFilters();
+                renderTable();
+                updateStats();
+
+                // Show tabs and enable features
+                document.getElementById('welcome').style.display = 'none';
+                document.getElementById('tabNavigation').style.display = 'block';
+                document.getElementById('toolbar').style.display = 'block';
+                document.getElementById('statsBar').style.display = 'flex';
+                document.getElementById('tableContainer').style.display = 'block';
+                document.getElementById('exportBtn').disabled = false;
+                document.getElementById('saveBtn').disabled = false;
+                document.getElementById('historyBtn').disabled = false;
+
+                // Generate intelligence views
+                generateOrderToday();
+                generateStockoutRisk();
+                generateSupplierUrgency();
+                generateOverview();
+
+                closeUploadModal();
+                saveSession();
+
+            } catch (error) {
+                alert('Error processing files: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function buildSupplierMaster(data) {
+            supplierMaster = {};
+            data.forEach(row => {
+                const code = row['Supplier'];
+                const name = row['Alpha Name'];
+                if (code && name) {
+                    supplierMaster[code] = name;
+                }
+            });
+        }
+
+        function processOpenPOs(data) {
+            const lookup = {};
+
+            data.forEach(row => {
+                const item = row['Short Item No'] || row['Item Number'];
+                const qtyOpen = parseFloat(row['Quantity Open'] || 0);
+                const promisedDate = row['Original Promised Date'] || row['Promised Date'];
+                const orderDate = row['Order Date'];
+
+                if (!item) return;
+
+                if (!lookup[item]) {
+                    lookup[item] = {
+                        totalOpen: 0,
+                        earliestDate: null,
+                        pastDue: false,
+                        stale: false
+                    };
+                }
+
+                lookup[item].totalOpen += qtyOpen;
+
+                if (promisedDate) {
+                    const promDate = new Date(promisedDate);
+                    const today = new Date();
+
+                    if (!lookup[item].earliestDate || promDate < new Date(lookup[item].earliestDate)) {
+                        lookup[item].earliestDate = promisedDate;
+                    }
+
+                    if (promDate < today) {
+                        lookup[item].pastDue = true;
+                    }
+                }
+
+                if (orderDate) {
+                    const ordDate = new Date(orderDate);
+                    const daysSinceOrder = (new Date() - ordDate) / (1000 * 60 * 60 * 24);
+                    if (daysSinceOrder > 120) {
+                        lookup[item].stale = true;
+                    }
+                }
+            });
+
+            return lookup;
+        }
+
+        
+        function buildHistoricalIntel(historyData) {
+            if (!historyData || historyData.length === 0) {
+                console.log('No history data to process');
+                return;
+            }
+            
+            historyIntel = {};
+            console.log('Building intelligence from', historyData.length, 'historical PO records');
+            
+            historyData.forEach(row => {
+                // Extract fields from Past POs (F4311)
+                const item = row['Short Item No'] || row['Item Number'] || row['Item'] || '';
+                const supplier = row['Address Number'] || row['Supp No'] || row['AN8'] || '';
+                const shipTo = row['Ship To Number'] || row['Ship To'] || '';
+                const qtyOrdered = parseFloat(row['Quantity Ordered'] || 0);
+                const qtyReceived = parseFloat(row['Quantity Received'] || 0);
+                const orderDate = row['Order Date'] || '';
+                
+                if (!item || !supplier || qtyOrdered === 0) return;
+                
+                // Only use fully received orders for intelligence (95%+ received)
+                if (qtyReceived <= 0 || qtyReceived < qtyOrdered * 0.95) return;
+                
+                const key = `${supplier}_${item}`;
+                
+                if (!historyIntel[key]) {
+                    historyIntel[key] = {
+                        orders: [],
+                        avgQty: 0,
+                        typicalShipTo: intel.typicalShipTo || null,
+                        lastOrderDate: intel.lastOrderDate || null,
+                        orderCount: 0
+                    };
+                }
+                
+                historyIntel[key].orders.push({
+                    qty: qtyOrdered,
+                    shipTo: shipTo,
+                    date: orderDate
+                });
+            });
+            
+            // Calculate intelligence metrics for each item/supplier combination
+            Object.keys(historyIntel).forEach(key => {
+                const intel = historyIntel[key];
+                const orders = intel.orders;
+                
+                intel.orderCount = orders.length;
+                
+                // Average quantity
+                intel.avgQty = Math.round(
+                    orders.reduce((sum, o) => sum + o.qty, 0) / orders.length
+                );
+                
+                // Most common ship-to plant
+                const shipToCounts = {};
+                orders.forEach(o => {
+                    if (o.shipTo) {
+                        shipToCounts[o.shipTo] = (shipToCounts[o.shipTo] || 0) + 1;
+                    }
+                });
+                
+                if (Object.keys(shipToCounts).length > 0) {
+                    intel.typicalShipTo = Object.keys(shipToCounts).reduce((a, b) =>
+                        shipToCounts[a] > shipToCounts[b] ? a : b
+                    );
+                }
+                
+                // Last order date
+                const sortedOrders = orders.sort((a, b) =>
+                    (b.date || '').toString().localeCompare((a.date || '').toString())
+                );
+                intel.lastOrderDate = sortedOrders[0]?.date || null;
+                
+                // Clean up temporary orders array
+                delete intel.orders;
+            });
+            
+            console.log('Built intelligence for', Object.keys(historyIntel).length, 'item/supplier combinations');
+            saveIntelligence();
+        }
+
+function processBuyingSheet(data, poLookup) {
+            return data.map((row, index) => {
+                const item = row['Item Number'] || '';
+
+                let supplier = row['Alpha Name'] || '';
+                const supplierCode = row['Supplier'] || '';
+                if (!supplier && supplierCode && supplierMaster[supplierCode]) {
+                    supplier = supplierMaster[supplierCode];
+                }
+                if (!supplier && supplierCode) {
+                    supplier = `Supplier ${supplierCode}`;
+                }
+                if (!supplier) {
+                    supplier = 'Unknown Supplier';
+                }
+
+                const shipTo = row['Ship To Numbers'] || row['Ship To'] || '';
+                const rop = parseFloat(row['Reorder Point'] || 0);
+                const totalOH = parseFloat(row['Total On Hand'] || row['Quantity On Hand'] || 0);
+                const available = parseFloat(row['Quantity Available'] || 0);
+                const openPO = parseFloat(row['Quantity On P.O.'] || 0);
+                const committed = parseFloat(row['Committed Quantity'] || 0);
+                const monthly = parseFloat(row['Average Usage'] || 0);
+                const annual = parseFloat(row['Previous 12 Mo Usage'] || 0);
+                const leadtime = parseInt(row['Leadtime'] || 14);
+
+                const daily = monthly / 30.4;
+                const ltd = daily * leadtime;
+                const netCov = totalOH + openPO - committed;
+                const daysSupply = daily > 0 ? Math.floor(netCov / daily) : 999;
+
+                let conf = 0;
+                if (available < 0) conf += 20;
+                if (totalOH < rop) conf += 15;
+                if (netCov < ltd) conf += 25;
+                if (openPO === 0 && netCov < 0) conf += 20;
+
+                const avgMonthly = annual / 12;
+                if (monthly > avgMonthly * 1.5) conf += 15;
+                else if (monthly > avgMonthly * 0.8) conf += 5;
+
+                const poInfo = poLookup[item];
+                let poArrives = '';
+                if (poInfo) {
+                    if (poInfo.earliestDate) {
+                        const date = new Date(poInfo.earliestDate);
+                        poArrives = date.toLocaleDateString();
+                        if (poInfo.pastDue) {
+                            poArrives += ' ⚠️';
+                            conf += 10;
+                        }
+                    }
+                    if (poInfo.stale) {
+                        conf += 5;
+                    }
+                }
+
+                conf = Math.max(0, Math.min(100, conf));
+
+                let action;
+                if (conf >= 70) action = 'ORDER';
+                else if (conf >= 60) action = 'REVIEW';
+                else if (conf >= 40 && openPO > 0) action = 'EXPEDITE';
+                else action = 'NO_ACTION';
+
+                let recQty = 0;
+                if (action === 'ORDER' || action === 'REVIEW') {
+                    const target = ltd * 1.1;
+                    recQty = Math.max(0, target - netCov);
+                    const moq = parseFloat(row['MRQ (Min Release Qty)'] || 0);
+                    if (moq > 0 && recQty > 0) {
+                        recQty = Math.ceil(recQty / moq) * moq;
+                    }
+                }
+
+                
+                
+                // Lookup historical intelligence for this item/supplier
+                const key = `${supplier.trim()}_${item}`;
+                const intel = historyIntel[key] || {};
+                return {
+                    id: index,
+                    item: item,
+                    description: (row['Description'] || '').substring(0, 40),
+                    supplier: supplier.trim(),
+                    supplierCode: supplierCode,
+                    shipTo: shipTo,
+                    rop: Math.floor(rop),
+                    totalOH: Math.floor(totalOH),
+                    available: Math.floor(available),
+                    openPO: Math.floor(openPO),
+                    poArrives: poArrives,
+                    pastDue: poInfo?.pastDue || false,
+                    stale: poInfo?.stale || false,
+                    daysSupply: daysSupply < 999 ? daysSupply : '999+',
+                    confidence: Math.floor(conf),
+                    action: action,
+                    recQty: Math.floor(recQty),
+                    leadtime: leadtime,
+                    monthly: monthly,
+                    selected: false,
+                    // Historical Intelligence
+                    avgQty: intel.avgQty || null,
+                    typicalShipTo: intel.typicalShipTo || null,
+                    lastOrderDate: intel.lastOrderDate || null,
+                    orderCount: intel.orderCount || 0,
+                    hasHistory: !!intel.avgQty
+                };
+            });
+        }
+
+        function generateOrderToday() {
+            const orderItems = allData
+                .filter(i => i.action === 'ORDER')
+                .sort((a, b) => b.confidence - a.confidence);
+
+            let html = '';
+
+            if (orderItems.length === 0) {
+                html = `
+                    <div class="welcome">
+                        <h2>✅ No Orders Required Today</h2>
+                        <p>All items have sufficient coverage through their lead times.</p>
+                    </div>
+                `;
+            } else {
+                html = `
+                    <div class="kpi-grid">
+                        <div class="kpi-card danger">
+                            <div class="kpi-value">${orderItems.length}</div>
+                            <div class="kpi-label">Items Need Ordering</div>
+                        </div>
+                        <div class="kpi-card warning">
+                            <div class="kpi-value">${orderItems.filter(i => i.confidence >= 80).length}</div>
+                            <div class="kpi-label">Critical (≥80)</div>
+                        </div>
+                        <div class="kpi-card info">
+                            <div class="kpi-value">${orderItems.reduce((sum, i) => sum + i.recQty, 0).toLocaleString()}</div>
+                            <div class="kpi-label">Total Units Needed</div>
+                        </div>
+                    </div>
+
+                    <h2 style="margin-bottom: 20px;">📋 Items Requiring Orders (${orderItems.length} items)</h2>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Description</th>
+                                    <th>Supplier</th>
+                                    <th>On Hand</th>
+                                    <th>Open PO</th>
+                                    <th>Days Supply</th>
+                                    <th>Confidence</th>
+                                    <th>Rec Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                orderItems.forEach(item => {
+                    const confBadge = item.confidence >= 80 ? 'badge-danger' : 'badge-warning';
+                    html += `
+                        <tr>
+                            <td>${item.item}</td>
+                            <td>${item.description}</td>
+                            <td>${item.supplier}</td>
+                            <td>${item.totalOH}</td>
+                            <td>${item.openPO}</td>
+                            <td>${item.daysSupply}</td>
+                            <td><span class="badge ${confBadge}">${item.confidence}</span></td>
+                            <td><strong>${item.recQty.toLocaleString()}</strong></td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            document.getElementById('orderTodayContent').innerHTML = html;
+        }
+
+        function generateStockoutRisk() {
+            const stockoutItems = allData
+                .filter(i => i.daysSupply !== '999+' && i.daysSupply < 30)
+                .sort((a, b) => a.daysSupply - b.daysSupply);
+
+            let html = '';
+
+            if (stockoutItems.length === 0) {
+                html = `
+                    <div class="welcome">
+                        <h2>✅ No Imminent Stockout Risk</h2>
+                        <p>All items have more than 30 days of supply.</p>
+                    </div>
+                `;
+            } else {
+                const critical = stockoutItems.filter(i => i.daysSupply < 7);
+                const warning = stockoutItems.filter(i => i.daysSupply >= 7 && i.daysSupply < 14);
+                const watch = stockoutItems.filter(i => i.daysSupply >= 14 && i.daysSupply < 30);
+
+                html = `
+                    <div class="kpi-grid">
+                        <div class="kpi-card danger">
+                            <div class="kpi-value">${critical.length}</div>
+                            <div class="kpi-label">Critical (<7 days)</div>
+                        </div>
+                        <div class="kpi-card warning">
+                            <div class="kpi-value">${warning.length}</div>
+                            <div class="kpi-label">Warning (7-14 days)</div>
+                        </div>
+                        <div class="kpi-card info">
+                            <div class="kpi-value">${watch.length}</div>
+                            <div class="kpi-label">Watch (14-30 days)</div>
+                        </div>
+                    </div>
+
+                    <h2 style="margin-bottom: 20px;">⚠️ Stockout Risk Items (${stockoutItems.length} items)</h2>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Description</th>
+                                    <th>Supplier</th>
+                                    <th>Days Supply</th>
+                                    <th>On Hand</th>
+                                    <th>Available</th>
+                                    <th>Open PO</th>
+                                    <th>Action</th>
+                                    <th>Rec Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                stockoutItems.forEach(item => {
+                    const riskBadge = item.daysSupply < 7 ? 'badge-danger' :
+                                     item.daysSupply < 14 ? 'badge-warning' : 'badge-info';
+                    const actionBadge = item.action === 'ORDER' ? 'badge-danger' :
+                                       item.action === 'REVIEW' ? 'badge-warning' : 'badge-info';
+
+                    html += `
+                        <tr>
+                            <td>${item.item}</td>
+                            <td>${item.description}</td>
+                            <td>${item.supplier}</td>
+                            <td><span class="badge ${riskBadge}">${item.daysSupply} days</span></td>
+                            <td>${item.totalOH}</td>
+                            <td>${item.available}</td>
+                            <td>${item.openPO}</td>
+                            <td><span class="badge ${actionBadge}">${item.action}</span></td>
+                            <td><strong>${item.recQty > 0 ? item.recQty.toLocaleString() : '-'}</strong></td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            document.getElementById('stockoutContent').innerHTML = html;
+        }
+
+        function generateSupplierUrgency() {
+            const suppliers = {};
+
+            allData.forEach(item => {
+                if (!suppliers[item.supplier]) {
+                    suppliers[item.supplier] = {
+                        items: [],
+                        highConf: 0,
+                        orderItems: 0,
+                        stockoutRisk: 0,
+                        totalValue: 0,
+                        score: 0
+                    };
+                }
+
+                suppliers[item.supplier].items.push(item);
+
+                if (item.confidence >= 70) {
+                    suppliers[item.supplier].highConf++;
+                    suppliers[item.supplier].score += 10;
+                }
+
+                if (item.action === 'ORDER') {
+                    suppliers[item.supplier].orderItems++;
+                    suppliers[item.supplier].score += 15;
+                }
+
+                if (item.daysSupply !== '999+' && item.daysSupply < 14) {
+                    suppliers[item.supplier].stockoutRisk++;
+                    suppliers[item.supplier].score += 8;
+                }
+
+                if (item.monthly > 100) {
+                    suppliers[item.supplier].score += 3;
+                }
+            });
+
+            const sorted = Object.entries(suppliers)
+                .sort((a, b) => b[1].score - a[1].score)
+                .filter(([_, data]) => data.score > 0);
+
+            let html = '';
+
+            if (sorted.length === 0) {
+                html = `
+                    <div class="welcome">
+                        <h2>✅ No Urgent Supplier Actions</h2>
+                        <p>All suppliers are in good standing.</p>
+                    </div>
+                `;
+            } else {
+                html = `
+                    <div class="kpi-grid">
+                        <div class="kpi-card danger">
+                            <div class="kpi-value">${sorted.filter(([_, d]) => d.score > 50).length}</div>
+                            <div class="kpi-label">Critical Suppliers</div>
+                        </div>
+                        <div class="kpi-card warning">
+                            <div class="kpi-value">${sorted.filter(([_, d]) => d.score > 30 && d.score <= 50).length}</div>
+                            <div class="kpi-label">High Priority</div>
+                        </div>
+                        <div class="kpi-card info">
+                            <div class="kpi-value">${sorted.reduce((sum, [_, d]) => sum + d.orderItems, 0)}</div>
+                            <div class="kpi-label">Total Items to Order</div>
+                        </div>
+                    </div>
+
+                    <h2 style="margin-bottom: 20px;">⚡ Supplier Urgency Ranking</h2>
+                `;
+
+                sorted.slice(0, 20).forEach(([supplier, data]) => {
+                    const score = data.score;
+                    let level, levelClass;
+
+                    if (score > 50) {
+                        level = 'CRITICAL';
+                        levelClass = 'urgency-critical';
+                    } else if (score > 30) {
+                        level = 'HIGH';
+                        levelClass = 'urgency-high';
+                    } else if (score > 15) {
+                        level = 'MEDIUM';
+                        levelClass = 'urgency-medium';
+                    } else {
+                        level = 'LOW';
+                        levelClass = 'urgency-low';
+                    }
+
+                    html += `
+                        <div class="supplier-card">
+                            <div class="supplier-header">
+                                <div class="supplier-name">${supplier}</div>
+                                <div class="urgency-badge ${levelClass}">${level} (${score})</div>
+                            </div>
+                            <div style="color: #666; font-size: 14px;">
+                                <strong>${data.orderItems}</strong> items need ordering |
+                                <strong>${data.stockoutRisk}</strong> stockout risk |
+                                <strong>${data.highConf}</strong> high confidence |
+                                <strong>${data.items.length}</strong> total items
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '';
+            }
+
+            document.getElementById('urgencyContent').innerHTML = html;
+        }
+
+        function generateOverview() {
+            const orderCount = allData.filter(i => i.action === 'ORDER').length;
+            const reviewCount = allData.filter(i => i.action === 'REVIEW').length;
+            const stockoutCount = allData.filter(i => i.daysSupply !== '999+' && i.daysSupply < 14).length;
+            const highConfCount = allData.filter(i => i.confidence >= 70).length;
+            const pastDueCount = allData.filter(i => i.pastDue).length;
+
+            let html = `
+                <h2 style="margin-bottom: 20px;">📊 Dashboard Overview</h2>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card primary">
+                        <div class="kpi-value">${allData.length}</div>
+                        <div class="kpi-label">Total Items</div>
+                    </div>
+                    <div class="kpi-card danger">
+                        <div class="kpi-value">${orderCount}</div>
+                        <div class="kpi-label">Order Today</div>
+                    </div>
+                    <div class="kpi-card warning">
+                        <div class="kpi-value">${reviewCount}</div>
+                        <div class="kpi-label">Review</div>
+                    </div>
+                    <div class="kpi-card info">
+                        <div class="kpi-value">${stockoutCount}</div>
+                        <div class="kpi-label">Stockout Risk (<14d)</div>
+                    </div>
+                    <div class="kpi-card danger">
+                        <div class="kpi-value">${highConfCount}</div>
+                        <div class="kpi-label">High Confidence (≥70)</div>
+                    </div>
+                    <div class="kpi-card warning">
+                        <div class="kpi-value">${pastDueCount}</div>
+                        <div class="kpi-label">Past Due POs</div>
+                    </div>
+                </div>
+
+                <h3 style="margin: 30px 0 15px 0;">Top Priority Items (Confidence ≥ 60)</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Description</th>
+                                <th>Supplier</th>
+                                <th>Days</th>
+                                <th>Confidence</th>
+                                <th>Action</th>
+                                <th>Rec Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            const topItems = allData
+                .filter(i => i.confidence >= 60)
+                .sort((a, b) => b.confidence - a.confidence)
+                .slice(0, 50);
+
+            topItems.forEach(item => {
+                const confBadge = item.confidence >= 70 ? 'badge-danger' : 'badge-warning';
+                const actionBadge = item.action === 'ORDER' ? 'badge-danger' :
+                                   item.action === 'REVIEW' ? 'badge-warning' : 'badge-info';
+
+                html += `
+                    <tr>
+                        <td>${item.item}</td>
+                        <td>${item.description}</td>
+                        <td>${item.supplier}</td>
+                        <td>${item.daysSupply}</td>
+                        <td><span class="badge ${confBadge}">${item.confidence}</span></td>
+                        <td><span class="badge ${actionBadge}">${item.action}</span></td>
+                        <td><strong>${item.recQty > 0 ? item.recQty.toLocaleString() : '-'}</strong></td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('overviewContent').innerHTML = html;
+        }
+
+        function populateFilters() {
+            const suppliers = [...new Set(allData.map(item => item.supplier))].sort();
+            const supSelect = document.getElementById('supplierFilter');
+            supSelect.innerHTML = '<option value="">All Suppliers</option>';
+            suppliers.forEach(supplier => {
+                const option = document.createElement('option');
+                option.value = supplier;
+                option.textContent = supplier;
+                supSelect.appendChild(option);
+            });
+
+            const shipTos = new Set();
+            allData.forEach(item => {
+                if (item.shipTo) {
+                    const sts = item.shipTo.toString().split(',');
+                    sts.forEach(st => shipTos.add(st.trim()));
+                }
+            });
+            const sortedShipTos = [...shipTos].sort();
+            const shipSelect = document.getElementById('shipToFilter');
+            shipSelect.innerHTML = '<option value="">All Locations</option>';
+            sortedShipTos.forEach(st => {
+                const option = document.createElement('option');
+                option.value = st;
+                option.textContent = st;
+                shipSelect.appendChild(option);
+            });
+        }
+
+        function applyFilters() {
+            const supplier = document.getElementById('supplierFilter').value;
+            const shipTo = document.getElementById('shipToFilter').value;
+            const action = document.getElementById('actionFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const minConf = parseInt(document.getElementById('confidenceFilter').value) || 0;
+            const search = document.getElementById('itemSearch').value.toLowerCase();
+
+            filteredData = allData.filter(item => {
+                if (supplier && item.supplier !== supplier) return false;
+                if (shipTo && !item.shipTo.includes(shipTo)) return false;
+                if (action && item.action !== action) return false;
+                if (status && itemStatus[item.id] !== status) return false;
+                if (item.confidence < minConf) return false;
+                if (search && !item.item.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            renderTable();
+            updateStats();
+        }
+
+        function clearFilters() {
+            document.getElementById('supplierFilter').value = '';
+            document.getElementById('shipToFilter').value = '';
+            document.getElementById('actionFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('confidenceFilter').value = '';
+            document.getElementById('itemSearch').value = '';
+
+            filteredData = [...allData];
+            renderTable();
+            updateStats();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            filteredData.forEach(item => {
+                const row = document.createElement('tr');
+                const status = itemStatus[item.id] || '';
+
+                if (item.selected) row.classList.add('highlight-row');
+                if (status === 'ORDERED') row.classList.add('row-ordered');
+                else if (status === 'PENDING') row.classList.add('row-pending');
+                else if (status === 'SKIP') row.classList.add('row-skip');
+
+                const actionBadge = item.action === 'ORDER' ? 'badge-danger' :
+                                   item.action === 'REVIEW' ? 'badge-warning' :
+                                   item.action === 'EXPEDITE' ? 'badge-info' : 'badge-secondary';
+
+                const ropClass = item.totalOH < item.rop ? 'text-danger' : '';
+                const poArrivesClass = item.pastDue ? 'past-due' : 'po-info';
+
+                row.innerHTML = `
+                    <td><input type="checkbox" class="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleSelect(${item.id})"></td>
+                    <td>${item.item}</td>
+                    <td>${item.description}</td>
+                    <td>${item.supplier}</td>
+                    <td>${item.shipTo}</td>
+                    <td class="${ropClass}">${item.rop}</td>
+                    <td class="${ropClass}">${item.totalOH}</td>
+                    <td>${item.available}</td>
+                    <td>${item.openPO}</td>
+                    <td class="${poArrivesClass}">${item.poArrives || '-'}</td>
+                    <td>${item.daysSupply}</td>
+                    <td><span class="badge ${actionBadge}">${item.confidence}</span></td>
+                    <td><span class="badge ${actionBadge}">${item.action}</span></td>
+                    <td><strong>${item.recQty > 0 ? item.recQty : '-'}</strong></td>
+                    <td class="${item.hasHistory ? 'has-history' : ''}" style="font-weight: ${item.hasHistory ? '600' : 'normal'};">${item.avgQty ? item.avgQty.toLocaleString() : '-'}</td>
+                    <td class="${item.hasHistory ? 'has-history' : ''}">${item.typicalShipTo || '-'}</td>
+                    <td class="${item.hasHistory ? 'has-history' : ''}" style="font-size: 11px;">${item.lastOrderDate || '-'}</td>
+                    <td><input type="text" class="notes-input" value="${itemNotes[item.id] || ''}" onchange="saveNote(${item.id}, this.value)" placeholder="Note..."></td>
+                    <td>
+                        <select class="status-select" onchange="setStatus(${item.id}, this.value)">
+                            <option value="" ${status === '' ? 'selected' : ''}>-</option>
+                            <option value="ORDERED" ${status === 'ORDERED' ? 'selected' : ''}>Ordered</option>
+                            <option value="PENDING" ${status === 'PENDING' ? 'selected' : ''}>Pending</option>
+                            <option value="SKIP" ${status === 'SKIP' ? 'selected' : ''}>Skip</option>
+                        </select>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function toggleSelectAll() {
+            const checked = document.getElementById('selectAll').checked;
+            filteredData.forEach(item => {
+                item.selected = checked;
+                const original = allData.find(i => i.id === item.id);
+                if (original) original.selected = checked;
+            });
+            renderTable();
+            updateStats();
+            autoSave();
+        }
+
+        function toggleSelect(id) {
+            const item = allData.find(i => i.id === id);
+            if (item) {
+                item.selected = !item.selected;
+                const filtered = filteredData.find(i => i.id === id);
+                if (filtered) filtered.selected = item.selected;
+            }
+            updateStats();
+            autoSave();
+        }
+
+        function saveNote(id, note) {
+            itemNotes[id] = note;
+            autoSave();
+        }
+
+        function setStatus(id, status) {
+            const prevStatus = itemStatus[id];
+
+            if (status) {
+                itemStatus[id] = status;
+                if (status === 'ORDERED' && prevStatus !== 'ORDERED') {
+                    const item = allData.find(i => i.id === id);
+                    if (item) addToHistory(item);
+                }
+            } else {
+                delete itemStatus[id];
+            }
+
+            renderTable();
+            updateStats();
+            autoSave();
+        }
+
+        function bulkSetStatus(status) {
+            const selected = allData.filter(i => i.selected);
+            if (selected.length === 0) {
+                alert('No items selected');
+                return;
+            }
+
+            selected.forEach(item => {
+                const prevStatus = itemStatus[item.id];
+                if (status) {
+                    itemStatus[item.id] = status;
+                    if (status === 'ORDERED' && prevStatus !== 'ORDERED') {
+                        addToHistory(item);
+                    }
+                } else {
+                    delete itemStatus[item.id];
+                }
+            });
+
+            renderTable();
+            updateStats();
+            autoSave();
+            alert(`Updated ${selected.length} items`);
+        }
+
+        function addToHistory(item) {
+            orderHistory.push({
+                date: new Date().toISOString(),
+                item: item.item,
+                description: item.description,
+                supplier: item.supplier,
+                shipTo: item.shipTo,
+                qty: item.recQty,
+                notes: itemNotes[item.id] || ''
+            });
+            saveHistory();
+        }
+
+        function updateStats() {
+            document.getElementById('totalItems').textContent = allData.length;
+            document.getElementById('filteredItems').textContent = filteredData.length;
+            document.getElementById('selectedItems').textContent = allData.filter(i => i.selected).length;
+            document.getElementById('selectedCount').textContent = allData.filter(i => i.selected).length;
+
+            const ordered = Object.values(itemStatus).filter(s => s === 'ORDERED').length;
+            const pending = Object.values(itemStatus).filter(s => s === 'PENDING').length;
+            const skip = Object.values(itemStatus).filter(s => s === 'SKIP').length;
+
+            document.getElementById('orderedCount').textContent = ordered;
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('skipCount').textContent = skip;
+        }
+
+        function saveSession() {
+            const session = {
+                data: allData,
+                notes: itemNotes,
+                status: itemStatus,
+                supplierMaster: supplierMaster,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+
+            const indicator = document.getElementById('saveIndicator');
+            indicator.style.display = 'block';
+            setTimeout(() => { indicator.style.display = 'none'; }, 2000);
+        }
+
+        function autoSave() {
+            clearTimeout(window.autoSaveTimer);
+            window.autoSaveTimer = setTimeout(() => saveSession(), 2000);
+        }
+
+        function loadSession() {
+            const saved = localStorage.getItem(SESSION_KEY);
+            if (!saved) return;
+
+            try {
+                const session = JSON.parse(saved);
+                allData = session.data;
+                itemNotes = session.notes;
+                itemStatus = session.status;
+                supplierMaster = session.supplierMaster || {};
+                filteredData = [...allData];
+
+                if (allData.length > 0) {
+                    populateFilters();
+                    renderTable();
+                    updateStats();
+                    generateOrderToday();
+                    generateStockoutRisk();
+                    generateSupplierUrgency();
+                    generateOverview();
+
+                    document.getElementById('welcome').style.display = 'none';
+                    document.getElementById('tabNavigation').style.display = 'block';
+                    document.getElementById('toolbar').style.display = 'block';
+                    document.getElementById('statsBar').style.display = 'flex';
+                    document.getElementById('tableContainer').style.display = 'block';
+                    document.getElementById('exportBtn').disabled = false;
+                    document.getElementById('saveBtn').disabled = false;
+                    document.getElementById('historyBtn').disabled = false;
+                }
+            } catch (error) {
+                console.error('Error loading session:', error);
+            }
+        }
+
+        function saveHistory() {
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(orderHistory));
+        }
+
+        function loadHistory() {
+            const saved = localStorage.getItem(HISTORY_KEY);
+            if (saved) {
+                try {
+                    orderHistory = JSON.parse(saved);
+                } catch (error) {
+                    console.error('Error loading history:', error);
+                }
+            }
+        }
+
+        function openHistoryModal() {
+            const content = document.getElementById('historyContent');
+            if (orderHistory.length === 0) {
+                content.innerHTML = '<p style="text-align: center; padding: 30px; color: #666;">No order history yet</p>';
+            } else {
+                let html = '<table style="width: 100%; font-size: 12px;"><thead><tr><th>Date</th><th>Item</th><th>Supplier</th><th>Ship-To</th><th>Qty</th><th>Notes</th></tr></thead><tbody>';
+                [...orderHistory].reverse().forEach(entry => {
+                    const date = new Date(entry.date);
+                    html += `<tr>
+                        <td>${date.toLocaleDateString()}</td>
+                        <td>${entry.item}</td>
+                        <td>${entry.supplier}</td>
+                        <td>${entry.shipTo}</td>
+                        <td>${entry.qty}</td>
+                        <td>${entry.notes}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                content.innerHTML = html;
+            }
+            document.getElementById('historyModal').classList.add('active');
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.remove('active');
+        }
+
+        function clearHistory() {
+            if (confirm('Clear all order history?')) {
+                orderHistory = [];
+                saveHistory();
+                openHistoryModal();
+            }
+        }
+
+        function exportHistory() {
+            if (orderHistory.length === 0) {
+                alert('No history to export');
+                return;
+            }
+
+            const exportData = orderHistory.map(entry => ({
+                'Date': new Date(entry.date).toLocaleString(),
+                'Item': entry.item,
+                'Description': entry.description,
+                'Supplier': entry.supplier,
+                'Ship To': entry.shipTo,
+                'Qty': entry.qty,
+                'Notes': entry.notes
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Order History");
+            XLSX.writeFile(wb, `Order_History_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        function exportToExcel() {
+            const exportData = filteredData.map(item => ({
+                'Selected': item.selected ? 'YES' : 'NO',
+                'Item Number': item.item,
+                'Description': item.description,
+                'Supplier Code': item.supplierCode,
+                'Supplier Name': item.supplier,
+                'Ship To': item.shipTo,
+                'Reorder Point': item.rop,
+                'On Hand': item.totalOH,
+                'Available': item.available,
+                'Open PO': item.openPO,
+                'PO Arrives': item.poArrives,
+                'Days Supply': item.daysSupply,
+                'Confidence': item.confidence,
+                'Action': item.action,
+                'Recommended Qty': item.recQty,
+                'Notes': itemNotes[item.id] || '',
+                'Status': itemStatus[item.id] || ''
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Planning Sheet");
+
+            const today = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `Planning_Intelligence_${today}.xlsx`);
+        }
+    
+        
+        // Load saved intelligence on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            loadSavedIntelligence();
+        });
+    </script>
+</body>
+</html>
