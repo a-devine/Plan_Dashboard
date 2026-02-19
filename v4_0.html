@@ -1000,14 +1000,14 @@
 
                 <div class="file-upload-box" id="itemMasterBox" onclick="document.getElementById('itemMasterInput').click()">
                     <div style="font-size: 24px; margin-bottom: 10px;">🧠</div>
-                    <div style="font-weight: bold;">Item Master (F4102)</div>
-                    <div style="font-size: 12px; color: #666;">Optional - Suppliers, LT, ABC</div>
+                    <div style="font-weight: bold;">Intelligence File</div>
+                    <div style="font-size: 12px; color: #666;">Master Intel, Planning Export, or F4102</div>
                     <div id="itemMasterName" style="font-size: 11px; margin-top: 5px; color: #28a745;"></div>
                 </div>
             </div>
 
             <div style="padding: 10px 0; font-size: 12px; color: #888; text-align: center;">
-                Upload your raw buying sheet daily. Item Master & Open POs add intelligence (suppliers, lead times, PO history). Refresh those weekly.
+                Upload your raw buying sheet daily. Intelligence file (Master Intel, Planning Export, or raw F4102) & Open POs enrich your data. Refresh weekly.
             </div>
 
             <input type="file" id="buyingSheetInput" accept=".xlsx,.xls,.csv" onchange="handleBuyingSheetUpload(event)">
@@ -1103,7 +1103,7 @@
             const poiCount = Object.keys(poIntelLookup).length;
             if (imCount > 0 || poiCount > 0) {
                 alertHtml += '<div style="background:#d4edda;padding:10px;border-radius:6px;margin-bottom:10px;font-size:12px;">🧠 <strong>Cached Intelligence:</strong> ';
-                if (imCount > 0) alertHtml += 'Item Master (' + imCount + ' items) ';
+                if (imCount > 0) alertHtml += 'Intelligence (' + imCount + ' items) ';
                 if (poiCount > 0) alertHtml += '| PO Intel (' + poiCount + ' items) ';
                 alertHtml += '— will auto-merge with your raw buying sheet. Re-upload to refresh.</div>';
             }
@@ -1160,6 +1160,8 @@
             }
         }
 
+        let intelFileWorkbook = null; // Store full workbook for multi-sheet files
+
         function handleItemMasterUpload(event) {
             const file = event.target.files[0];
             if (file) {
@@ -1171,11 +1173,68 @@
                     try {
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
-                        const sheetName = workbook.SheetNames[0];
-                        itemMasterData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-                        document.getElementById('itemMasterName').textContent = file.name + ' (' + itemMasterData.length + ' rows)';
+                        intelFileWorkbook = workbook;
+
+                        // Auto-detect file type based on sheet names and columns
+                        const sheets = workbook.SheetNames;
+                        let fileType = 'unknown';
+                        let primaryData = null;
+                        let suppliersData = null;
+
+                        if (sheets.some(s => s.toLowerCase().includes('master intelligence'))) {
+                            // Raynor Master Intelligence workbook
+                            fileType = 'master_intel';
+                            const miSheet = sheets.find(s => s.toLowerCase().includes('master intelligence'));
+                            primaryData = XLSX.utils.sheet_to_json(workbook.Sheets[miSheet]);
+                            // Also grab Suppliers sheet if available
+                            const supSheet = sheets.find(s => s.toLowerCase() === 'suppliers');
+                            if (supSheet) {
+                                suppliersData = XLSX.utils.sheet_to_json(workbook.Sheets[supSheet]);
+                            }
+                        } else if (sheets.some(s => s.toLowerCase().includes('planning'))) {
+                            // Planning Intelligence export
+                            fileType = 'planning_export';
+                            const piSheet = sheets.find(s => s.toLowerCase().includes('planning'));
+                            primaryData = XLSX.utils.sheet_to_json(workbook.Sheets[piSheet]);
+                        } else {
+                            // Raw Item Master (F4102) or unknown — use first sheet
+                            fileType = 'item_master';
+                            primaryData = XLSX.utils.sheet_to_json(workbook.Sheets[sheets[0]]);
+                        }
+
+                        // Double-check by looking at column names
+                        if (primaryData && primaryData.length > 0) {
+                            const cols = Object.keys(primaryData[0]).map(c => c.toLowerCase());
+                            if (cols.some(c => c.includes('net available') || c.includes('net coverage'))) {
+                                fileType = 'planning_export';
+                            } else if (cols.some(c => c.includes('avg po qty') || c.includes('po count')) && cols.some(c => c.includes('supplier'))) {
+                                fileType = 'master_intel';
+                            } else if (cols.some(c => c.includes('primary supplier') || c.includes('stocking type'))) {
+                                fileType = 'item_master';
+                            }
+                        }
+
+                        itemMasterData = primaryData;
+
+                        // If we got a suppliers sheet, build the supplier name lookup
+                        if (suppliersData && suppliersData.length > 0) {
+                            suppliersData.forEach(row => {
+                                const num = row['Supplier Number'] || row['Supplier_Number'] || row['Address Number'] || '';
+                                const name = row['Alpha Name'] || row['Supplier Name'] || row['Alpha_Name'] || '';
+                                if (num && name) {
+                                    supplierMaster[String(Math.floor(Number(num)))] = name;
+                                }
+                            });
+                            console.log('Loaded supplier names from intelligence file:', Object.keys(supplierMaster).length);
+                        }
+
+                        const typeLabels = { master_intel: 'Master Intelligence', planning_export: 'Planning Export', item_master: 'Item Master (F4102)' };
+                        document.getElementById('itemMasterName').textContent = file.name + ' — ' + typeLabels[fileType] + ' (' + primaryData.length + ' rows)';
+                        console.log('Intelligence file detected as:', fileType, '| Sheets:', sheets.join(', '), '| Rows:', primaryData.length);
+
                     } catch (error) {
-                        alert('Error reading Item Master: ' + error.message);
+                        alert('Error reading intelligence file: ' + error.message);
+                        console.error(error);
                     }
                 };
                 reader.readAsArrayBuffer(file);
@@ -1206,39 +1265,70 @@
             if (!data || data.length === 0) return;
 
             const cols = Object.keys(data[0]);
+            const colsLower = cols.map(c => c.toLowerCase().trim());
+
             const findCol = (keywords) => {
-                for (const c of cols) {
-                    const cl = c.toLowerCase().trim();
+                for (let i = 0; i < cols.length; i++) {
+                    const cl = colsLower[i];
                     for (const kw of keywords) {
-                        if (cl.includes(kw)) return c;
+                        if (cl.includes(kw)) return cols[i];
                     }
                 }
                 return null;
             };
 
-            const itemCol = findCol(['2nd item', 'item number', 'short item']);
-            const primarySupCol = findCol(['primary supplier', 'primary sup']);
-            const ropCol = findCol(['reorder point', 'rop']);
-            const reorderQtyCol = findCol(['reorder quantity', 'reorder qty']);
-            const leadtimeCol = findCol(['leadtime level', 'lead time level', 'leadtime']);
-            const stockingCol = findCol(['stocking type']);
-            const abcSalesCol = findCol(['abc code 1', 'abc code- sales', 'abc sales']);
-            const abcMarginCol = findCol(['abc code 2', 'abc code- margin', 'abc margin']);
-            const abcInvCol = findCol(['abc code 3', 'abc code- investment', 'abc inv']);
-            const commCol = findCol(['commodity class', 'comm class']);
+            // Detect format: Planning Export, Master Intelligence, or raw F4102
+            const hasPOCount = findCol(['po count', 'po_count']);
+            const hasAvgPO = findCol(['avg po', 'avg_po']);
+            const hasNetAvail = findCol(['net available', 'net avail']);
+            const hasPrimarySup = findCol(['primary supplier', 'primary sup']);
+
+            let format = 'f4102';
+            if (hasNetAvail) format = 'planning_export';
+            else if (hasPOCount && hasAvgPO && !hasPrimarySup) format = 'master_intel';
+
+            console.log('Building Item Master lookup. Format detected:', format, '| Rows:', data.length);
+
+            // Column mapping — adapts to each format
+            const itemCol = findCol(['item number', '2nd item', 'short item']);
+            const supCodeCol = findCol(['supplier code', 'supplier number', 'primary supplier', 'primary sup', 'supplier_number']);
+            const supNameCol = findCol(['supplier name', 'alpha name', 'alpha_name']);
+            const ropCol = findCol(['reorder point', 'rop', 'f4102 rop', 'f4102_rop']);
+            const reorderQtyCol = findCol(['reorder quantity', 'reorder qty', 'f4102 reorder', 'f4102_reorder']);
+            const leadtimeCol = findCol(['f4102 lead time', 'f4102_leadtime', 'leadtime level', 'lead time level', 'leadtime', 'lead time']);
+            const stockingCol = findCol(['stocking type', 'stocking_type']);
+            const abcSalesCol = findCol(['abc sales', 'abc_sales', 'abc code 1', 'abc code- sales']);
+            const abcMarginCol = findCol(['abc margin', 'abc_margin', 'abc code 2', 'abc code- margin']);
+            const abcInvCol = findCol(['abc inventory', 'abc_inventory', 'abc code 3', 'abc code- investment']);
+            const commCol = findCol(['commodity class', 'comm class', 'comm_class']);
+            const poCountCol = findCol(['po count', 'po_count']);
+            const avgPOCol = findCol(['avg po qty', 'avg_po_qty', 'avg po']);
+            const shipToCol = findCol(['ship to', 'ship-to', 'po ship-to', 'po_ship_to', 'ship to number']);
+
+            console.log('Column mapping:', {itemCol, supCodeCol, supNameCol, leadtimeCol, poCountCol, avgPOCol, abcSalesCol, shipToCol});
 
             data.forEach(row => {
                 const item = String(row[itemCol] || '').trim();
                 if (!item) return;
 
-                const primarySup = row[primarySupCol];
+                // Supplier code
                 let supCode = '';
-                if (primarySup && !isNaN(primarySup) && primarySup !== 0) {
-                    supCode = String(Math.floor(Number(primarySup)));
+                const rawSup = row[supCodeCol];
+                if (rawSup && !isNaN(rawSup) && rawSup !== 0) {
+                    supCode = String(Math.floor(Number(rawSup)));
+                } else if (rawSup && typeof rawSup === 'string') {
+                    supCode = rawSup.trim();
+                }
+
+                // Supplier name — also populate supplierMaster
+                const supName = row[supNameCol] || '';
+                if (supCode && supName && !supplierMaster[supCode]) {
+                    supplierMaster[supCode] = supName;
                 }
 
                 itemMasterLookup[item] = {
                     primarySupplier: supCode,
+                    supplierName: supName,
                     rop: row[ropCol] ? Math.floor(Number(row[ropCol])) || 0 : 0,
                     reorderQty: row[reorderQtyCol] ? Math.floor(Number(row[reorderQtyCol])) || 0 : 0,
                     leadtime: row[leadtimeCol] ? Math.floor(Number(row[leadtimeCol])) || 0 : 0,
@@ -1246,9 +1336,15 @@
                     abcSales: String(row[abcSalesCol] || '').trim(),
                     abcMargin: String(row[abcMarginCol] || '').trim(),
                     abcInventory: String(row[abcInvCol] || '').trim(),
-                    commClass: String(row[commCol] || '').trim()
+                    commClass: String(row[commCol] || '').trim(),
+                    // PO intel fields (from Master Intel or Planning Export)
+                    poCount: row[poCountCol] ? parseInt(row[poCountCol]) || 0 : 0,
+                    avgPOQty: row[avgPOCol] ? parseInt(row[avgPOCol]) || 0 : 0,
+                    shipTo: String(row[shipToCol] || '').trim()
                 };
             });
+
+            console.log('Built Item Master lookup for', Object.keys(itemMasterLookup).length, 'items. Supplier master now has', Object.keys(supplierMaster).length, 'entries.');
 
             localStorage.setItem('raynor_item_master_v40', JSON.stringify({
                 data: itemMasterLookup,
@@ -1575,7 +1671,7 @@
                 let supplierSource = row['Supplier_Source'] || '';
                 if (!supplierSource) {
                     if (row['Alpha Name'] && row['Supplier']) supplierSource = 'Buying Sheet';
-                    else if (imData.primarySupplier && supplierCode === imData.primarySupplier) supplierSource = 'Item Master (F4102)';
+                    else if (imData.primarySupplier && supplierCode === imData.primarySupplier) supplierSource = 'Intelligence';
                     else if (poData.topSupplier && supplierCode === poData.topSupplier) supplierSource = 'PO History';
                     else if (!supplierCode) supplierSource = 'NONE';
                     else supplierSource = 'Buying Sheet';
@@ -1588,7 +1684,7 @@
                     } else {
                         supplier = 'Supplier ' + supplierCode;
                     }
-                    supplierSource = 'Item Master (F4102)';
+                    supplierSource = 'Intelligence';
                 }
 
                 if ((!supplierCode || supplier === 'Unknown Supplier') && poData.topSupplier) {
@@ -1601,10 +1697,10 @@
                     supplierSource = 'PO History';
                 }
 
-                const poCount = parseInt(row['PO_Count']) || poData.poCount || 0;
-                const avgPOQty = parseInt(row['Avg_PO_Qty']) || poData.avgPOQty || 0;
+                const poCount = parseInt(row['PO_Count']) || poData.poCount || imData.poCount || 0;
+                const avgPOQty = parseInt(row['Avg_PO_Qty']) || poData.avgPOQty || imData.avgPOQty || 0;
                 const lastPODate = row['Last_PO_Date'] || '';
-                const poShipTo = row['PO_Ship_To'] || poData.topShipTo || '';
+                const poShipTo = row['PO_Ship_To'] || poData.topShipTo || imData.shipTo || '';
                 const f4102ROP = parseInt(row['F4102_ROP']) || imData.rop || 0;
                 const f4102ReorderQty = parseInt(row['F4102_Reorder_Qty']) || imData.reorderQty || 0;
                 const f4102Leadtime = parseInt(row['F4102_Leadtime']) || imData.leadtime || 0;
@@ -2303,7 +2399,7 @@
         function getSourceBadge(src) {
             if (!src || src === 'NONE') return '<span class="source-none">NONE</span>';
             if (src.includes('Buying')) return '<span class="source-buying">BUY</span>';
-            if (src.includes('F4102') || src.includes('Item Master')) return '<span class="source-f4102">F4102</span>';
+            if (src.includes('F4102') || src.includes('Item Master') || src.includes('Intelligence')) return '<span class="source-f4102">INTEL</span>';
             if (src.includes('PO')) return '<span class="source-po">PO</span>';
             return '<span class="source-none">' + src.substring(0,4) + '</span>';
         }
