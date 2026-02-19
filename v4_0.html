@@ -1,0 +1,2695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raynor Planning Intelligence v4.0</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container { max-width: 1900px; margin: 0 auto; }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header-left .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: #e74c3c;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-upload { background: #667eea; color: white; }
+        .btn-save { background: #f39c12; color: white; }
+        .btn-history { background: #3498db; color: white; }
+        .btn-export { background: #28a745; color: white; }
+
+        /* Planning Horizons Table */
+        .planning-horizons {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .planning-horizons-grid {
+            display: grid;
+            grid-template-columns: auto repeat(5, 1fr);
+            gap: 12px;
+            align-items: center;
+        }
+
+        .planning-label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 13px;
+            text-align: right;
+        }
+
+        .planning-cell {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            min-width: 70px;
+        }
+
+        .planning-cell-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .planning-cell-date {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-top: 3px;
+        }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            background: white;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 0;
+            display: none;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #dee2e6;
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            background: #f8f9fa;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            margin-bottom: -2px;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 30px;
+            min-height: 500px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid;
+        }
+
+        .kpi-card.primary { border-color: #667eea; }
+        .kpi-card.danger { border-color: #e74c3c; }
+        .kpi-card.success { border-color: #28a745; }
+        .kpi-card.warning { border-color: #f39c12; }
+        .kpi-card.info { border-color: #3498db; }
+
+        .kpi-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .kpi-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Supplier Cards */
+        .supplier-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .supplier-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .supplier-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .supplier-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .urgency-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .urgency-critical { background: #e74c3c; color: white; }
+        .urgency-high { background: #f39c12; color: white; }
+        .urgency-medium { background: #3498db; color: white; }
+        .urgency-low { background: #6c757d; color: white; }
+
+        .toolbar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .toolbar-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .toolbar-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toolbar label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .toolbar select, .toolbar input {
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .clear-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .bulk-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn-ordered { background: #28a745; color: white; }
+        .btn-pending { background: #f39c12; color: white; }
+        .btn-skip { background: #6c757d; color: white; }
+        .btn-clear-status { background: #e74c3c; color: white; }
+
+        .stats-bar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: none;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 5px 15px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table thead {
+            background: #667eea;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        table th {
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 12px;
+        }
+
+        table tbody tr:hover {
+            background: #f8f9ff;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-danger { background: #e74c3c; color: white; }
+        .badge-warning { background: #f39c12; color: white; }
+        .badge-success { background: #28a745; color: white; }
+        .badge-info { background: #3498db; color: white; }
+        .badge-secondary { background: #6c757d; color: white; }
+
+        .notes-input {
+            width: 180px;
+            padding: 6px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .status-select {
+            padding: 4px 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .file-upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .file-upload-box {
+            padding: 20px;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload-box:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .file-upload-box.uploaded {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .welcome {
+            text-align: center;
+            padding: 100px 20px;
+            color: #666;
+        }
+
+        .welcome h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+
+        .welcome-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .highlight-row { background: #fff3cd !important; }
+        .row-ordered { background: #d4edda !important; }
+        .row-pending { background: #fff3cd !important; }
+        .row-skip { background: #e2e3e5 !important; }
+
+        .save-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .text-danger {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .po-info {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .past-due {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .table-wrapper {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .has-history {
+            background: #faf5ff !important;
+            color: #5b21b6;
+        }
+
+        /* Stockout Work Mode Styles */
+        .stockout-toolbar {
+            background: #fff5f5;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #feb2b2;
+        }
+
+        .stockout-toolbar .toolbar-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .stockout-toolbar .toolbar-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .stockout-bulk-actions {
+            display: flex;
+            gap: 10px;
+            padding: 12px;
+            background: #fef2f2;
+            border-radius: 8px;
+            align-items: center;
+        }
+
+        .stockout-stats {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            background: #fff5f5;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid #feb2b2;
+        }
+
+        .risk-critical { background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        .risk-warning { background: #f39c12; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        .risk-watch { background: #3498db; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+
+        .supplier-intelligence-badge {
+            display: inline-block;
+            background: #d4edda;
+            color: #155724;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        /* v4.0 Intelligence Detail Panel */
+        .detail-row td { padding: 0 !important; border-top: none !important; }
+        .intel-panel {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 15px 20px;
+            border-left: 4px solid #667eea;
+            margin: 0;
+        }
+        .intel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .intel-section {
+            background: white;
+            border-radius: 6px;
+            padding: 10px 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .intel-section-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .intel-field {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            padding: 2px 0;
+        }
+        .intel-label { color: #666; }
+        .intel-value { font-weight: 600; color: #2c3e50; }
+        .source-buying { background: #cce5ff; color: #004085; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+        .source-f4102 { background: #d4edda; color: #155724; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+        .source-po { background: #fff3cd; color: #856404; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+        .source-none { background: #f8d7da; color: #721c24; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover { background: #f0f4ff !important; }
+        .abc-badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: bold; margin-right: 2px; }
+        .abc-a { background: #28a745; color: white; }
+        .abc-b { background: #ffc107; color: #333; }
+        .abc-c { background: #6c757d; color: white; }
+        .abc-d { background: #dee2e6; color: #666; }
+
+        .net-avail-negative { color: #e74c3c; font-weight: bold; }
+        .net-avail-warning { color: #f39c12; font-weight: bold; }
+        .net-cov-danger { background: #e74c3c; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+        .net-cov-warning { background: #f39c12; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+        .net-cov-success { background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>Raynor Planning Intelligence<span class="version-badge">v4.0 Order Engine</span></h1>
+                <p class="subtitle">Net Position Ordering | Out of Stock | Order Today | Supplier Urgency | Full PO Visibility</p>
+            </div>
+            <div class="header-right">
+                <button class="header-btn btn-upload" onclick="openUploadModal()">📁 Upload</button>
+                <button class="header-btn btn-save" onclick="saveSession()" id="saveBtn" disabled>💾 Save</button>
+                <button class="header-btn btn-history" onclick="openHistoryModal()" id="historyBtn" disabled>📜 History</button>
+                <button class="header-btn btn-export" onclick="exportToExcel()" id="exportBtn" disabled>⬇️ Export</button>
+            </div>
+        </div>
+
+        <!-- Planning Horizons Table -->
+        <div class="planning-horizons" id="planningHorizons">
+            <div class="planning-horizons-grid">
+                <div class="planning-label">Planning Horizons</div>
+                <div class="planning-cell">
+                    <div class="planning-cell-label">7 Days</div>
+                    <div class="planning-cell-date" id="horizon7">Mar 1</div>
+                </div>
+                <div class="planning-cell">
+                    <div class="planning-cell-label">14 Days</div>
+                    <div class="planning-cell-date" id="horizon14">Mar 8</div>
+                </div>
+                <div class="planning-cell">
+                    <div class="planning-cell-label">20 Days</div>
+                    <div class="planning-cell-date" id="horizon20">Mar 14</div>
+                </div>
+                <div class="planning-cell">
+                    <div class="planning-cell-label">30 Days</div>
+                    <div class="planning-cell-date" id="horizon30">Mar 24</div>
+                </div>
+                <div class="planning-cell">
+                    <div class="planning-cell-label">90 Days</div>
+                    <div class="planning-cell-date" id="horizon90">May 23</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation" id="tabNavigation">
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="workmode" onclick="switchTab('workmode')">🛠️ Work Mode</button>
+                <button class="tab-button" data-tab="ordertoday" onclick="switchTab('ordertoday')">📋 Order Today</button>
+                <button class="tab-button" data-tab="stockout" onclick="switchTab('stockout')">⚠️ Out of Stock</button>
+                <button class="tab-button" data-tab="urgency" onclick="switchTab('urgency')">⚡ Supplier Urgency</button>
+                <button class="tab-button" data-tab="overview" onclick="switchTab('overview')">📊 Overview</button>
+            </div>
+        </div>
+
+        <!-- Work Mode Tab -->
+        <div class="tab-content active" id="workmode">
+            <div class="toolbar" id="toolbar">
+                <div class="toolbar-row">
+                    <div class="toolbar-section">
+                        <label>Supplier:</label>
+                        <select id="supplierFilter">
+                            <option value="">All Suppliers</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-section">
+                        <label>Ship-To:</label>
+                        <select id="shipToFilter">
+                            <option value="">All Locations</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-section">
+                        <label>Action:</label>
+                        <select id="actionFilter">
+                            <option value="">All Actions</option>
+                            <option value="ORDER">Order</option>
+                            <option value="REVIEW">Review</option>
+                            <option value="EXPEDITE">Expedite</option>
+                            <option value="NO_ACTION">No Action</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-section">
+                        <label>Status:</label>
+                        <select id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="ORDERED">Ordered</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="SKIP">Skip</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-section">
+                        <label>Min Conf:</label>
+                        <input type="number" id="confidenceFilter" min="0" max="100" placeholder="60" style="width: 70px;">
+                    </div>
+
+                    <div class="toolbar-section">
+                        <label>Search:</label>
+                        <input type="text" id="itemSearch" placeholder="Item #">
+                    </div>
+
+                    <div class="toolbar-section">
+                        <button class="filter-btn" onclick="applyFilters()">🔍 Apply</button>
+                        <button class="clear-btn" onclick="clearFilters()">✖ Clear</button>
+                    </div>
+                </div>
+
+                <div class="bulk-actions">
+                    <label><span id="selectedCount">0</span> selected:</label>
+                    <button class="bulk-btn btn-ordered" onclick="bulkSetStatus('ORDERED')">✓ Mark Ordered</button>
+                    <button class="bulk-btn btn-pending" onclick="bulkSetStatus('PENDING')">⏳ Mark Pending</button>
+                    <button class="bulk-btn btn-skip" onclick="bulkSetStatus('SKIP')">⊘ Mark Skip</button>
+                    <button class="bulk-btn btn-clear-status" onclick="bulkSetStatus('')">✖ Clear Status</button>
+                </div>
+            </div>
+
+            <div class="stats-bar" id="statsBar">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalItems">0</div>
+                    <div class="stat-label">Total Items</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="filteredItems">0</div>
+                    <div class="stat-label">Showing</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="selectedItems">0</div>
+                    <div class="stat-label">Selected</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="orderedCount">0</div>
+                    <div class="stat-label">Ordered</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="pendingCount">0</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="skipCount">0</div>
+                    <div class="stat-label">Skipped</div>
+                </div>
+            </div>
+
+            <div class="welcome" id="welcome">
+                <h2>Welcome to Planning Intelligence</h2>
+                <p>Upload your files to begin</p>
+                <button class="welcome-btn" onclick="openUploadModal()">📁 Upload Files</button>
+            </div>
+
+            <div class="table-wrapper" id="tableContainer" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" class="checkbox" onclick="toggleSelectAll()"></th>
+                            <th>Item</th>
+                            <th>Description</th>
+                            <th title="Supplier Number">Supp #</th>
+                            <th>Supplier</th>
+                            <th>Ship-To</th>
+                            <th title="On Hand">OH</th>
+                            <th title="Committed Quantity">Commit</th>
+                            <th title="Open PO Quantity">OO</th>
+                            <th title="Net Available = OH + OO - Commit">Net Avail</th>
+                            <th title="Net Coverage = OH + OO - Commit - Demand thru LT">Net Cov</th>
+                            <th title="Lead Time (days)">LT</th>
+                            <th title="Days of Supply">Days</th>
+                            <th>Action</th>
+                            <th>Rec</th>
+                            <th>Notes</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Order Today Tab -->
+        <div class="tab-content" id="ordertoday">
+            <div id="orderTodayContent">
+                <div class="welcome">
+                    <h2>📋 Order Today</h2>
+                    <p>Upload data to see items requiring immediate PO action</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Out of Stock Tab (Work Mode) -->
+        <div class="tab-content" id="stockout">
+            <div id="stockoutToolbar" style="display: none;">
+                <div class="stockout-toolbar">
+                    <div class="toolbar-row">
+                        <div class="toolbar-section">
+                            <label>Supplier:</label>
+                            <select id="soSupplierFilter">
+                                <option value="">All Suppliers</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-section">
+                            <label>Ship-To:</label>
+                            <select id="soShipToFilter">
+                                <option value="">All Locations</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-section">
+                            <label>Risk Level:</label>
+                            <select id="soRiskFilter">
+                                <option value="">All Levels</option>
+                                <option value="critical">Critical (<7 days)</option>
+                                <option value="warning">Warning (7-14 days)</option>
+                                <option value="watch">Watch (14-30 days)</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-section">
+                            <label>Action:</label>
+                            <select id="soActionFilter">
+                                <option value="">All Actions</option>
+                                <option value="ORDER">Order</option>
+                                <option value="REVIEW">Review</option>
+                                <option value="EXPEDITE">Expedite</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-section">
+                            <label>Status:</label>
+                            <select id="soStatusFilter">
+                                <option value="">All Status</option>
+                                <option value="ORDERED">Ordered</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="SKIP">Skip</option>
+                                <option value="">Unworked</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-section">
+                            <label>Search:</label>
+                            <input type="text" id="soItemSearch" placeholder="Item #" style="padding: 8px 12px; border: 2px solid #dee2e6; border-radius: 6px; font-size: 14px;">
+                        </div>
+                        <div class="toolbar-section">
+                            <button class="filter-btn" onclick="applyStockoutFilters()">🔍 Apply</button>
+                            <button class="clear-btn" onclick="clearStockoutFilters()">✖ Clear</button>
+                        </div>
+                    </div>
+                    <div class="stockout-bulk-actions">
+                        <label><span id="soSelectedCount">0</span> selected:</label>
+                        <button class="bulk-btn btn-ordered" onclick="bulkSetStockoutStatus('ORDERED')">✓ Mark Ordered</button>
+                        <button class="bulk-btn btn-pending" onclick="bulkSetStockoutStatus('PENDING')">⏳ Mark Pending</button>
+                        <button class="bulk-btn btn-skip" onclick="bulkSetStockoutStatus('SKIP')">⊘ Mark Skip</button>
+                        <button class="bulk-btn btn-clear-status" onclick="bulkSetStockoutStatus('')">✖ Clear Status</button>
+                    </div>
+                </div>
+            </div>
+            <div id="stockoutContent">
+                <div class="welcome">
+                    <h2>⚠️ Stockout Risk</h2>
+                    <p>Upload data to see items at risk of stocking out</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supplier Urgency Tab -->
+        <div class="tab-content" id="urgency">
+            <div id="urgencyContent">
+                <div class="welcome">
+                    <h2>⚡ Supplier Urgency</h2>
+                    <p>Upload data to see supplier-level risk analysis</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overview Tab -->
+        <div class="tab-content" id="overview">
+            <div id="overviewContent">
+                <div class="welcome">
+                    <h2>📊 Dashboard Overview</h2>
+                    <p>Upload data to see comprehensive analytics</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="save-indicator" id="saveIndicator">✓ Session Saved</div>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <h2>📁 Upload Planning Files</h2>
+            <div id="uploadAlert" style="display: none;"></div>
+
+            <div class="file-upload-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="file-upload-box" id="buyingSheetBox" onclick="document.getElementById('buyingSheetInput').click()">
+                    <div style="font-size: 24px; margin-bottom: 10px;">📊</div>
+                    <div style="font-weight: bold;">Buying Sheet</div>
+                    <div style="font-size: 12px; color: #666;">Required</div>
+                    <div id="buyingSheetName" style="font-size: 11px; margin-top: 5px; color: #28a745;"></div>
+                </div>
+
+                <div class="file-upload-box" id="openPOBox" onclick="document.getElementById('openPOInput').click()">
+                    <div style="font-size: 24px; margin-bottom: 10px;">📦</div>
+                    <div style="font-weight: bold;">Open POs</div>
+                    <div style="font-size: 12px; color: #666;">Optional - PO delivery dates</div>
+                    <div id="openPOName" style="font-size: 11px; margin-top: 5px; color: #28a745;"></div>
+                </div>
+
+                <div class="file-upload-box" id="itemMasterBox" onclick="document.getElementById('itemMasterInput').click()">
+                    <div style="font-size: 24px; margin-bottom: 10px;">🧠</div>
+                    <div style="font-weight: bold;">Item Master (F4102)</div>
+                    <div style="font-size: 12px; color: #666;">Optional - Suppliers, LT, ABC</div>
+                    <div id="itemMasterName" style="font-size: 11px; margin-top: 5px; color: #28a745;"></div>
+                </div>
+            </div>
+
+            <div style="padding: 10px 0; font-size: 12px; color: #888; text-align: center;">
+                Upload your raw buying sheet daily. Item Master & Open POs add intelligence (suppliers, lead times, PO history). Refresh those weekly.
+            </div>
+
+            <input type="file" id="buyingSheetInput" accept=".xlsx,.xls,.csv" onchange="handleBuyingSheetUpload(event)">
+            <input type="file" id="openPOInput" accept=".xlsx,.xls,.csv" onchange="handleOpenPOUpload(event)">
+            <input type="file" id="itemMasterInput" accept=".xlsx,.xls,.csv" onchange="handleItemMasterUpload(event)">
+            <input type="file" id="pastPOInput" accept=".xlsx,.xls,.csv" onchange="handlePastPOUpload(event)">
+
+            <div class="modal-buttons">
+                <button class="modal-btn" style="background: #6c757d; color: white;" onclick="closeUploadModal()">Cancel</button>
+                <button class="modal-btn" style="background: #28a745; color: white;" onclick="processAllFiles()" id="processBtn" disabled>Process Files</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <h2>📜 Order History</h2>
+            <div id="historyContent" style="max-height: 400px; overflow-y: auto;"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn" style="background: #e74c3c; color: white;" onclick="clearHistory()">Clear History</button>
+                <button class="modal-btn" style="background: #28a745; color: white;" onclick="exportHistory()">Export History</button>
+                <button class="modal-btn" style="background: #6c757d; color: white;" onclick="closeHistoryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // v4.0 Session Keys
+        const SESSION_KEY = 'raynor_planning_session_v40';
+        const HISTORY_KEY = 'raynor_order_history_v40';
+
+        // Historical Intelligence Storage
+        let historyIntel = {};
+        let intelligenceLastUpdated = null;
+
+        let allData = [];
+        let filteredData = [];
+        let itemNotes = {};
+        let itemStatus = {};
+        let orderHistory = [];
+        let buyingSheetData = null;
+        let openPOData = null;
+        let itemMasterData = null;
+        let supplierMaster = {};
+        let itemMasterLookup = {};
+        let poIntelLookup = {};
+
+        window.addEventListener('load', function() {
+            updatePlanningHorizons();
+            loadSession();
+            loadHistory();
+        });
+
+        function updatePlanningHorizons() {
+            const today = new Date();
+            const horizons = [7, 14, 20, 30, 90];
+            horizons.forEach(days => {
+                const date = new Date(today);
+                date.setDate(date.getDate() + days);
+                const formatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                document.getElementById('horizon' + days).textContent = formatted;
+            });
+            document.getElementById('planningHorizons').style.display = 'block';
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            if (tabName !== 'workmode' && allData.length > 0) {
+                if (tabName === 'ordertoday') generateOrderToday();
+                else if (tabName === 'stockout') generateStockoutRisk();
+                else if (tabName === 'urgency') generateSupplierUrgency();
+                else if (tabName === 'overview') generateOverview();
+            }
+        }
+
+        function openUploadModal() {
+            const session = localStorage.getItem(SESSION_KEY);
+            let alertHtml = '';
+            if (session && allData.length > 0) {
+                alertHtml += '<div class="alert alert-info" style="background:#e8f4fd;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;">ℹ️ <strong>Session found!</strong> Upload new files to start fresh, or cancel to continue.</div>';
+            }
+            const imCount = Object.keys(itemMasterLookup).length;
+            const poiCount = Object.keys(poIntelLookup).length;
+            if (imCount > 0 || poiCount > 0) {
+                alertHtml += '<div style="background:#d4edda;padding:10px;border-radius:6px;margin-bottom:10px;font-size:12px;">🧠 <strong>Cached Intelligence:</strong> ';
+                if (imCount > 0) alertHtml += 'Item Master (' + imCount + ' items) ';
+                if (poiCount > 0) alertHtml += '| PO Intel (' + poiCount + ' items) ';
+                alertHtml += '— will auto-merge with your raw buying sheet. Re-upload to refresh.</div>';
+            }
+            document.getElementById('uploadAlert').innerHTML = alertHtml;
+            document.getElementById('uploadAlert').style.display = alertHtml ? 'block' : 'none';
+            document.getElementById('uploadModal').classList.add('active');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+        }
+
+        function handleBuyingSheetUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('buyingSheetName').textContent = file.name;
+                document.getElementById('buyingSheetBox').classList.add('uploaded');
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        buyingSheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+                        document.getElementById('processBtn').disabled = false;
+                    } catch (error) {
+                        alert('Error reading buying sheet: ' + error.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function handleOpenPOUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('openPOName').textContent = file.name;
+                document.getElementById('openPOBox').classList.add('uploaded');
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        openPOData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                    } catch (error) {
+                        alert('Error reading open PO file: ' + error.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function handleItemMasterUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('itemMasterName').textContent = file.name;
+                document.getElementById('itemMasterBox').classList.add('uploaded');
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        itemMasterData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                        document.getElementById('itemMasterName').textContent = file.name + ' (' + itemMasterData.length + ' rows)';
+                    } catch (error) {
+                        alert('Error reading Item Master: ' + error.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function handlePastPOUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const pastPOData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                        alert(`Loaded ${pastPOData.length} Past PO records`);
+                    } catch (error) {
+                        alert('Error reading Past POs: ' + error.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function buildItemMasterLookup(data) {
+            itemMasterLookup = {};
+            if (!data || data.length === 0) return;
+
+            const cols = Object.keys(data[0]);
+            const findCol = (keywords) => {
+                for (const c of cols) {
+                    const cl = c.toLowerCase().trim();
+                    for (const kw of keywords) {
+                        if (cl.includes(kw)) return c;
+                    }
+                }
+                return null;
+            };
+
+            const itemCol = findCol(['2nd item', 'item number', 'short item']);
+            const primarySupCol = findCol(['primary supplier', 'primary sup']);
+            const ropCol = findCol(['reorder point', 'rop']);
+            const reorderQtyCol = findCol(['reorder quantity', 'reorder qty']);
+            const leadtimeCol = findCol(['leadtime level', 'lead time level', 'leadtime']);
+            const stockingCol = findCol(['stocking type']);
+            const abcSalesCol = findCol(['abc code 1', 'abc code- sales', 'abc sales']);
+            const abcMarginCol = findCol(['abc code 2', 'abc code- margin', 'abc margin']);
+            const abcInvCol = findCol(['abc code 3', 'abc code- investment', 'abc inv']);
+            const commCol = findCol(['commodity class', 'comm class']);
+
+            data.forEach(row => {
+                const item = String(row[itemCol] || '').trim();
+                if (!item) return;
+
+                const primarySup = row[primarySupCol];
+                let supCode = '';
+                if (primarySup && !isNaN(primarySup) && primarySup !== 0) {
+                    supCode = String(Math.floor(Number(primarySup)));
+                }
+
+                itemMasterLookup[item] = {
+                    primarySupplier: supCode,
+                    rop: row[ropCol] ? Math.floor(Number(row[ropCol])) || 0 : 0,
+                    reorderQty: row[reorderQtyCol] ? Math.floor(Number(row[reorderQtyCol])) || 0 : 0,
+                    leadtime: row[leadtimeCol] ? Math.floor(Number(row[leadtimeCol])) || 0 : 0,
+                    stockingType: String(row[stockingCol] || '').trim(),
+                    abcSales: String(row[abcSalesCol] || '').trim(),
+                    abcMargin: String(row[abcMarginCol] || '').trim(),
+                    abcInventory: String(row[abcInvCol] || '').trim(),
+                    commClass: String(row[commCol] || '').trim()
+                };
+            });
+
+            localStorage.setItem('raynor_item_master_v40', JSON.stringify({
+                data: itemMasterLookup,
+                lastUpdated: new Date().toISOString().split('T')[0]
+            }));
+        }
+
+        function buildPOIntelLookup(data) {
+            poIntelLookup = {};
+            if (!data || data.length === 0) return;
+
+            const itemCounts = {};
+
+            data.forEach(row => {
+                const item = String(row['2nd Item Number'] || row['Item Number'] || row['Short Item No'] || '').trim();
+                if (!item) return;
+
+                const supplier = row['Supplier Number'] || row['Supp No'] || '';
+                const shipTo = row['Ship To Number'] || row['Ship To'] || '';
+                const qty = parseFloat(row['Quantity Ordered'] || 0);
+
+                if (!itemCounts[item]) {
+                    itemCounts[item] = { orders: [], suppliers: {}, shipTos: {} };
+                }
+
+                itemCounts[item].orders.push(qty);
+
+                if (supplier) {
+                    const sc = String(Math.floor(Number(supplier)));
+                    itemCounts[item].suppliers[sc] = (itemCounts[item].suppliers[sc] || 0) + 1;
+                }
+                if (shipTo) {
+                    const st = String(Math.floor(Number(shipTo)));
+                    itemCounts[item].shipTos[st] = (itemCounts[item].shipTos[st] || 0) + 1;
+                }
+            });
+
+            Object.keys(itemCounts).forEach(item => {
+                const d = itemCounts[item];
+                const orders = d.orders.filter(q => q > 0);
+                const topSup = Object.keys(d.suppliers).length > 0
+                    ? Object.keys(d.suppliers).reduce((a, b) => d.suppliers[a] > d.suppliers[b] ? a : b)
+                    : '';
+                const topShipTo = Object.keys(d.shipTos).length > 0
+                    ? Object.keys(d.shipTos).reduce((a, b) => d.shipTos[a] > d.shipTos[b] ? a : b)
+                    : '';
+
+                poIntelLookup[item] = {
+                    poCount: d.orders.length,
+                    avgPOQty: orders.length > 0 ? Math.round(orders.reduce((s, q) => s + q, 0) / orders.length) : 0,
+                    topSupplier: topSup,
+                    topShipTo: topShipTo
+                };
+            });
+
+            localStorage.setItem('raynor_po_intel_v40', JSON.stringify({
+                data: poIntelLookup,
+                lastUpdated: new Date().toISOString().split('T')[0]
+            }));
+        }
+
+        function loadCachedLookups() {
+            const imStored = localStorage.getItem('raynor_item_master_v40');
+            if (imStored) {
+                try {
+                    const parsed = JSON.parse(imStored);
+                    itemMasterLookup = parsed.data || {};
+                } catch(e) {}
+            }
+            const poStored = localStorage.getItem('raynor_po_intel_v40');
+            if (poStored) {
+                try {
+                    const parsed = JSON.parse(poStored);
+                    poIntelLookup = parsed.data || {};
+                } catch(e) {}
+            }
+        }
+
+        function buildSupplierMaster(data) {
+            supplierMaster = {};
+            data.forEach(row => {
+                const code = row['Supplier'];
+                const name = row['Alpha Name'];
+                if (code && name) {
+                    supplierMaster[String(Math.floor(Number(code)))] = name;
+                    supplierMaster[code] = name;
+                }
+            });
+        }
+
+        let poSupplierIntel = {};
+        function buildPOSupplierIntelligence(poData) {
+            poSupplierIntel = {};
+            if (!poData) return;
+
+            poData.forEach(row => {
+                const item = String(row['2nd Item Number'] || row['Short Item No'] || row['Item Number'] || '').trim();
+                const supplier = row['Supplier Number'] || row['Supp No'] || '';
+                if (!item || !supplier) return;
+
+                const suppNum = String(Math.floor(Number(supplier)));
+                if (!poSupplierIntel[item]) {
+                    poSupplierIntel[item] = {};
+                }
+                poSupplierIntel[item][suppNum] = (poSupplierIntel[item][suppNum] || 0) + 1;
+            });
+
+            Object.keys(poSupplierIntel).forEach(item => {
+                const suppliers = poSupplierIntel[item];
+                const best = Object.entries(suppliers).sort((a, b) => b[1] - a[1])[0];
+                poSupplierIntel[item] = best[0];
+            });
+
+            localStorage.setItem('raynor_po_supplier_intel_v40', JSON.stringify(poSupplierIntel));
+        }
+
+        function loadPOSupplierIntelligence() {
+            const stored = localStorage.getItem('raynor_po_supplier_intel_v40');
+            if (stored) {
+                try {
+                    poSupplierIntel = JSON.parse(stored);
+                } catch(e) {}
+            }
+        }
+
+        function processOpenPOs(data) {
+            const lookup = {};
+
+            data.forEach(row => {
+                const item = row['Short Item No'] || row['Item Number'];
+                const qtyOpen = parseFloat(row['Quantity Open'] || 0);
+                const promisedDate = row['Original Promised Date'] || row['Promised Date'];
+                const orderDate = row['Order Date'];
+
+                if (!item) return;
+
+                if (!lookup[item]) {
+                    lookup[item] = {
+                        totalOpen: 0,
+                        earliestDate: null,
+                        pastDue: false,
+                        stale: false
+                    };
+                }
+
+                lookup[item].totalOpen += qtyOpen;
+
+                if (promisedDate) {
+                    const promDate = new Date(promisedDate);
+                    const today = new Date();
+
+                    if (!lookup[item].earliestDate || promDate < new Date(lookup[item].earliestDate)) {
+                        lookup[item].earliestDate = promisedDate;
+                    }
+
+                    if (promDate < today) {
+                        lookup[item].pastDue = true;
+                    }
+                }
+
+                if (orderDate) {
+                    const ordDate = new Date(orderDate);
+                    const daysSinceOrder = (new Date() - ordDate) / (1000 * 60 * 60 * 24);
+                    if (daysSinceOrder > 120) {
+                        lookup[item].stale = true;
+                    }
+                }
+            });
+
+            return lookup;
+        }
+
+        function processAllFiles() {
+            if (!buyingSheetData) {
+                alert('Please upload buying sheet');
+                return;
+            }
+
+            try {
+                buildSupplierMaster(buyingSheetData);
+
+                if (itemMasterData) {
+                    buildItemMasterLookup(itemMasterData);
+                }
+                if (openPOData) {
+                    buildPOIntelLookup(openPOData);
+                }
+
+                let poLookup = {};
+                if (openPOData) {
+                    poLookup = processOpenPOs(openPOData);
+                    buildPOSupplierIntelligence(openPOData);
+                }
+
+                allData = processBuyingSheet(buyingSheetData, poLookup);
+                filteredData = [...allData];
+
+                itemNotes = {};
+                itemStatus = {};
+
+                populateFilters();
+                renderTable();
+                updateStats();
+
+                document.getElementById('welcome').style.display = 'none';
+                document.getElementById('tabNavigation').style.display = 'block';
+                document.getElementById('toolbar').style.display = 'block';
+                document.getElementById('statsBar').style.display = 'flex';
+                document.getElementById('tableContainer').style.display = 'block';
+                document.getElementById('exportBtn').disabled = false;
+                document.getElementById('saveBtn').disabled = false;
+                document.getElementById('historyBtn').disabled = false;
+
+                generateOrderToday();
+                generateStockoutRisk();
+                generateSupplierUrgency();
+                generateOverview();
+
+                closeUploadModal();
+                saveSession();
+
+            } catch (error) {
+                alert('Error processing files: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function processBuyingSheet(data, poLookup) {
+            return data.map((row, index) => {
+                const item = row['Item Number'] || '';
+
+                let supplier = row['Alpha Name'] || '';
+                let supplierCode = row['Supplier'] || '';
+
+                if (supplierCode && !isNaN(supplierCode)) {
+                    supplierCode = String(Math.floor(Number(supplierCode)));
+                }
+
+                if (!supplier && supplierCode && supplierMaster[supplierCode]) {
+                    supplier = supplierMaster[supplierCode];
+                }
+
+                if ((!supplier || !supplierCode) && item) {
+                    const learnedSupplier = poSupplierIntel[item] || poSupplierIntel[String(item)];
+                    if (learnedSupplier) {
+                        supplierCode = learnedSupplier;
+                        if (supplierMaster[learnedSupplier]) {
+                            supplier = supplierMaster[learnedSupplier];
+                        } else {
+                            supplier = 'Supplier ' + learnedSupplier;
+                        }
+                    }
+                }
+
+                if (!supplier && supplierCode) {
+                    supplier = 'Supplier ' + supplierCode;
+                }
+                if (!supplier) {
+                    supplier = 'Unknown Supplier';
+                }
+
+                const shipTo = row['Ship To Numbers'] || row['Ship To'] || '';
+                const rop = parseFloat(row['Reorder Point'] || 0);
+                const totalOH = parseFloat(row['Total On Hand'] || row['Quantity On Hand'] || 0);
+                const available = parseFloat(row['Quantity Available'] || 0);
+                const openPO = parseFloat(row['Quantity On P.O.'] || 0);
+                const committed = parseFloat(row['Committed Quantity'] || 0);
+                const monthly = parseFloat(row['Average Usage'] || 0);
+                const annual = parseFloat(row['Previous 12 Mo Usage'] || 0);
+                const leadtime = parseInt(row['Leadtime'] || 14);
+
+                const daily = monthly / 30.4;
+                const demandThruLT = daily * leadtime;
+                const netAvailable = totalOH + openPO - committed;
+                const netCoverage = netAvailable - demandThruLT;
+                const daysSupply = daily > 0 ? Math.floor(netAvailable / daily) : 999;
+
+                let conf = 0;
+                if (available < 0) conf += 20;
+                if (totalOH < rop) conf += 15;
+                if (netCoverage < 0) conf += 25;
+                if (openPO === 0 && netCoverage < 0) conf += 20;
+
+                const avgMonthly = annual / 12;
+                if (monthly > avgMonthly * 1.5) conf += 15;
+                else if (monthly > avgMonthly * 0.8) conf += 5;
+
+                const poInfo = poLookup[item];
+                let poArrives = '';
+                if (poInfo) {
+                    if (poInfo.earliestDate) {
+                        const date = new Date(poInfo.earliestDate);
+                        poArrives = date.toLocaleDateString();
+                        if (poInfo.pastDue) {
+                            poArrives += ' ⚠️';
+                            conf += 10;
+                        }
+                    }
+                    if (poInfo.stale) {
+                        conf += 5;
+                    }
+                }
+
+                conf = Math.max(0, Math.min(100, conf));
+
+                let action;
+                if (netCoverage < 0 && openPO === 0) action = 'ORDER';
+                else if (netCoverage < 0 && openPO > 0) action = 'EXPEDITE';
+                else if (netAvailable < 0) action = 'REVIEW';
+                else action = 'NO_ACTION';
+
+                let recQty = 0;
+                if (action === 'ORDER' || action === 'REVIEW') {
+                    recQty = Math.max(0, Math.abs(netCoverage) + (demandThruLT * 0.1));
+                    const moq = parseFloat(row['MRQ (Min Release Qty)'] || 0);
+                    if (moq > 0 && recQty > 0) {
+                        recQty = Math.ceil(recQty / moq) * moq;
+                    }
+                }
+
+                const imData = itemMasterLookup[item] || {};
+                const poData = poIntelLookup[item] || {};
+
+                let supplierSource = row['Supplier_Source'] || '';
+                if (!supplierSource) {
+                    if (row['Alpha Name'] && row['Supplier']) supplierSource = 'Buying Sheet';
+                    else if (imData.primarySupplier && supplierCode === imData.primarySupplier) supplierSource = 'Item Master (F4102)';
+                    else if (poData.topSupplier && supplierCode === poData.topSupplier) supplierSource = 'PO History';
+                    else if (!supplierCode) supplierSource = 'NONE';
+                    else supplierSource = 'Buying Sheet';
+                }
+
+                if ((!supplierCode || supplier === 'Unknown Supplier') && imData.primarySupplier) {
+                    supplierCode = imData.primarySupplier;
+                    if (supplierMaster[supplierCode]) {
+                        supplier = supplierMaster[supplierCode];
+                    } else {
+                        supplier = 'Supplier ' + supplierCode;
+                    }
+                    supplierSource = 'Item Master (F4102)';
+                }
+
+                if ((!supplierCode || supplier === 'Unknown Supplier') && poData.topSupplier) {
+                    supplierCode = poData.topSupplier;
+                    if (supplierMaster[supplierCode]) {
+                        supplier = supplierMaster[supplierCode];
+                    } else {
+                        supplier = 'Supplier ' + supplierCode;
+                    }
+                    supplierSource = 'PO History';
+                }
+
+                const poCount = parseInt(row['PO_Count']) || poData.poCount || 0;
+                const avgPOQty = parseInt(row['Avg_PO_Qty']) || poData.avgPOQty || 0;
+                const lastPODate = row['Last_PO_Date'] || '';
+                const poShipTo = row['PO_Ship_To'] || poData.topShipTo || '';
+                const f4102ROP = parseInt(row['F4102_ROP']) || imData.rop || 0;
+                const f4102ReorderQty = parseInt(row['F4102_Reorder_Qty']) || imData.reorderQty || 0;
+                const f4102Leadtime = parseInt(row['F4102_Leadtime']) || imData.leadtime || 0;
+                const stockingType = row['Stocking_Type'] || imData.stockingType || '';
+                const abcSales = row['ABC_Sales'] || imData.abcSales || '';
+                const abcMargin = row['ABC_Margin'] || imData.abcMargin || '';
+                const abcInventory = row['ABC_Inventory'] || imData.abcInventory || '';
+                const commClass = row['Comm_Class'] || imData.commClass || '';
+
+                return {
+                    id: index,
+                    item: item,
+                    description: (row['Description'] || '').substring(0, 40),
+                    supplier: supplier.trim(),
+                    supplierCode: supplierCode,
+                    shipTo: shipTo,
+                    rop: Math.floor(rop),
+                    totalOH: Math.floor(totalOH),
+                    available: Math.floor(available),
+                    openPO: Math.floor(openPO),
+                    committed: Math.floor(committed),
+                    netAvailable: Math.floor(netAvailable),
+                    netCoverage: Math.floor(netCoverage),
+                    demandThruLT: Math.floor(demandThruLT),
+                    poArrives: poArrives,
+                    pastDue: poInfo?.pastDue || false,
+                    stale: poInfo?.stale || false,
+                    daysSupply: daysSupply < 999 ? daysSupply : '999+',
+                    confidence: Math.floor(conf),
+                    action: action,
+                    recQty: Math.floor(recQty),
+                    leadtime: leadtime,
+                    monthly: monthly,
+                    selected: false,
+                    supplierSource: supplierSource,
+                    poCount: poCount,
+                    avgPOQty: avgPOQty,
+                    lastPODate: lastPODate,
+                    poShipTo: poShipTo,
+                    f4102ROP: f4102ROP,
+                    f4102ReorderQty: f4102ReorderQty,
+                    f4102Leadtime: f4102Leadtime,
+                    stockingType: stockingType,
+                    abcSales: abcSales,
+                    abcMargin: abcMargin,
+                    abcInventory: abcInventory,
+                    commClass: commClass,
+                    expanded: false
+                };
+            });
+        }
+
+        function generateOrderToday() {
+            const orderItems = allData
+                .filter(i => i.action === 'ORDER')
+                .sort((a, b) => b.confidence - a.confidence);
+
+            let html = '';
+
+            if (orderItems.length === 0) {
+                html = `
+                    <div class="welcome">
+                        <h2>✅ No Orders Required Today</h2>
+                        <p>All items have sufficient coverage through their lead times.</p>
+                    </div>
+                `;
+            } else {
+                html = `
+                    <div class="kpi-grid">
+                        <div class="kpi-card danger">
+                            <div class="kpi-value">${orderItems.length}</div>
+                            <div class="kpi-label">Items Need Ordering</div>
+                        </div>
+                        <div class="kpi-card warning">
+                            <div class="kpi-value">${orderItems.filter(i => i.confidence >= 80).length}</div>
+                            <div class="kpi-label">Critical (≥80)</div>
+                        </div>
+                        <div class="kpi-card info">
+                            <div class="kpi-value">${orderItems.reduce((sum, i) => sum + i.recQty, 0).toLocaleString()}</div>
+                            <div class="kpi-label">Total Units Needed</div>
+                        </div>
+                    </div>
+
+                    <h2 style="margin-bottom: 20px;">📋 Items Requiring Orders (${orderItems.length} items)</h2>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Description</th>
+                                    <th>Supplier</th>
+                                    <th>On Hand</th>
+                                    <th>Committed</th>
+                                    <th>Open PO</th>
+                                    <th>Net Avail</th>
+                                    <th>Days Supply</th>
+                                    <th>Confidence</th>
+                                    <th>Rec Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                orderItems.forEach(item => {
+                    const confBadge = item.confidence >= 80 ? 'badge-danger' : 'badge-warning';
+                    html += `
+                        <tr>
+                            <td>${item.item}</td>
+                            <td>${item.description}</td>
+                            <td>${item.supplier}</td>
+                            <td>${item.totalOH}</td>
+                            <td>${item.committed}</td>
+                            <td>${item.openPO}</td>
+                            <td>${item.netAvailable}</td>
+                            <td>${item.daysSupply}</td>
+                            <td><span class="badge ${confBadge}">${item.confidence}</span></td>
+                            <td><strong>${item.recQty.toLocaleString()}</strong></td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            document.getElementById('orderTodayContent').innerHTML = html;
+        }
+
+        let stockoutData = [];
+        let filteredStockoutData = [];
+        let stockoutNotes = {};
+        let stockoutStatus = {};
+
+        function generateStockoutRisk() {
+            stockoutData = allData
+                .filter(i => i.daysSupply !== '999+' && i.daysSupply < 30)
+                .sort((a, b) => a.daysSupply - b.daysSupply);
+
+            filteredStockoutData = [...stockoutData];
+
+            if (stockoutData.length === 0) {
+                document.getElementById('stockoutToolbar').style.display = 'none';
+                document.getElementById('stockoutContent').innerHTML = `
+                    <div class="welcome">
+                        <h2>✅ No Imminent Stockout Risk</h2>
+                        <p>All items have more than 30 days of supply.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('stockoutToolbar').style.display = 'block';
+
+            const suppliers = [...new Set(stockoutData.map(i => i.supplier))].sort();
+            const supSelect = document.getElementById('soSupplierFilter');
+            supSelect.innerHTML = '<option value="">All Suppliers</option>';
+            suppliers.forEach(s => {
+                supSelect.innerHTML += '<option value="' + s + '">' + s + '</option>';
+            });
+
+            const shipTos = new Set();
+            stockoutData.forEach(item => {
+                if (item.shipTo) {
+                    const sts = item.shipTo.toString().split(',');
+                    sts.forEach(st => shipTos.add(st.trim()));
+                }
+            });
+            const sortedShipTos = [...shipTos].sort();
+            const stSelect = document.getElementById('soShipToFilter');
+            stSelect.innerHTML = '<option value="">All Locations</option>';
+            sortedShipTos.forEach(st => {
+                stSelect.innerHTML += '<option value="' + st + '">' + st + '</option>';
+            });
+
+            renderStockoutTable();
+        }
+
+        function renderStockoutTable() {
+            const items = filteredStockoutData;
+            const critical = items.filter(i => i.daysSupply < 7);
+            const warning = items.filter(i => i.daysSupply >= 7 && i.daysSupply < 14);
+            const watch = items.filter(i => i.daysSupply >= 14 && i.daysSupply < 30);
+
+            const orderedCount = items.filter(i => stockoutStatus[i.id] === 'ORDERED').length;
+            const pendingCount = items.filter(i => stockoutStatus[i.id] === 'PENDING').length;
+            const skipCount = items.filter(i => stockoutStatus[i.id] === 'SKIP').length;
+            const unworked = items.length - orderedCount - pendingCount - skipCount;
+
+            let html = `
+                <div class="kpi-grid">
+                    <div class="kpi-card danger">
+                        <div class="kpi-value">${critical.length}</div>
+                        <div class="kpi-label">Critical (<7 days)</div>
+                    </div>
+                    <div class="kpi-card warning">
+                        <div class="kpi-value">${warning.length}</div>
+                        <div class="kpi-label">Warning (7-14 days)</div>
+                    </div>
+                    <div class="kpi-card info">
+                        <div class="kpi-value">${watch.length}</div>
+                        <div class="kpi-label">Watch (14-30 days)</div>
+                    </div>
+                    <div class="kpi-card success">
+                        <div class="kpi-value">${orderedCount}</div>
+                        <div class="kpi-label">Ordered</div>
+                    </div>
+                    <div class="kpi-card primary">
+                        <div class="kpi-value">${unworked}</div>
+                        <div class="kpi-label">Unworked</div>
+                    </div>
+                </div>
+
+                <div class="table-wrapper" style="max-height: 600px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" class="checkbox" id="soSelectAll" onclick="toggleStockoutSelectAll()"></th>
+                                <th>Item</th>
+                                <th>Description</th>
+                                <th title="Supplier Number">Supp #</th>
+                                <th>Supplier</th>
+                                <th>Ship-To</th>
+                                <th>Risk</th>
+                                <th title="On Hand">OH</th>
+                                <th title="Committed">Commit</th>
+                                <th title="Open PO">OO</th>
+                                <th title="Net Available">Net Avail</th>
+                                <th title="Net Coverage">Net Cov</th>
+                                <th title="Lead Time">LT</th>
+                                <th title="Days Supply">Days</th>
+                                <th>Action</th>
+                                <th>Rec Qty</th>
+                                <th>Notes</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            items.forEach(item => {
+                const status = stockoutStatus[item.id] || '';
+                let rowClass = '';
+                if (status === 'ORDERED') rowClass = 'row-ordered';
+                else if (status === 'PENDING') rowClass = 'row-pending';
+                else if (status === 'SKIP') rowClass = 'row-skip';
+                if (item.soSelected) rowClass += ' highlight-row';
+
+                const riskLevel = item.daysSupply < 7 ? 'critical' : item.daysSupply < 14 ? 'warning' : 'watch';
+                const riskClass = riskLevel === 'critical' ? 'risk-critical' : riskLevel === 'warning' ? 'risk-warning' : 'risk-watch';
+                const riskLabel = riskLevel === 'critical' ? 'CRITICAL' : riskLevel === 'warning' ? 'WARNING' : 'WATCH';
+
+                const actionBadge = item.action === 'ORDER' ? 'badge-danger' :
+                                   item.action === 'REVIEW' ? 'badge-warning' :
+                                   item.action === 'EXPEDITE' ? 'badge-info' : 'badge-secondary';
+
+                const supplierDisplay = item.supplierCode && item.supplier !== 'Unknown Supplier'
+                    ? item.supplier
+                    : '<span style="color:#e74c3c;">' + item.supplier + '</span>';
+
+                const ltVal = item.f4102Leadtime || item.leadtime || '-';
+
+                html += '<tr class="' + rowClass + '">';
+                html += '<td><input type="checkbox" class="checkbox" ' + (item.soSelected ? 'checked' : '') + ' onchange="toggleStockoutSelect(' + item.id + ')"></td>';
+                html += '<td>' + item.item + '</td>';
+                html += '<td>' + item.description + '</td>';
+                html += '<td style="font-size:11px;">' + (item.supplierCode || '-') + '</td>';
+                html += '<td>' + supplierDisplay + '</td>';
+                html += '<td>' + (item.shipTo || '-') + '</td>';
+                html += '<td><span class="' + riskClass + '">' + riskLabel + '</span></td>';
+                html += '<td>' + item.totalOH + '</td>';
+                html += '<td>' + item.committed + '</td>';
+                html += '<td>' + item.openPO + '</td>';
+                html += '<td>' + (item.netAvailable < 0 ? '<span class="net-avail-negative">' + item.netAvailable + '</span>' : (item.netAvailable < item.demandThruLT * 0.5 ? '<span class="net-avail-warning">' + item.netAvailable + '</span>' : item.netAvailable)) + '</td>';
+                let netCovHTML = item.netCoverage;
+                if (item.netCoverage < 0) {
+                    netCovHTML = '<span class="net-cov-danger">' + item.netCoverage + '</span>';
+                } else if (item.netCoverage < item.demandThruLT * 0.25) {
+                    netCovHTML = '<span class="net-cov-warning">' + item.netCoverage + '</span>';
+                } else {
+                    netCovHTML = '<span class="net-cov-success">' + item.netCoverage + '</span>';
+                }
+                html += '<td>' + netCovHTML + '</td>';
+                html += '<td>' + ltVal + 'd</td>';
+                html += '<td><strong>' + item.daysSupply + '</strong></td>';
+                html += '<td><span class="badge ' + actionBadge + '">' + item.action + '</span></td>';
+                html += '<td><strong>' + (item.recQty > 0 ? item.recQty.toLocaleString() : '-') + '</strong></td>';
+                html += '<td><input type="text" class="notes-input" value="' + (stockoutNotes[item.id] || '') + '" onchange="saveStockoutNote(' + item.id + ', this.value)" placeholder="Note..."></td>';
+                html += '<td><select class="status-select" onchange="setStockoutStatus(' + item.id + ', this.value)">';
+                html += '<option value="" ' + (status === '' ? 'selected' : '') + '>-</option>';
+                html += '<option value="ORDERED" ' + (status === 'ORDERED' ? 'selected' : '') + '>Ordered</option>';
+                html += '<option value="PENDING" ' + (status === 'PENDING' ? 'selected' : '') + '>Pending</option>';
+                html += '<option value="SKIP" ' + (status === 'SKIP' ? 'selected' : '') + '>Skip</option>';
+                html += '</select></td>';
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+
+            document.getElementById('stockoutContent').innerHTML = html;
+            document.getElementById('soSelectedCount').textContent = items.filter(i => i.soSelected).length;
+        }
+
+        function applyStockoutFilters() {
+            const supplier = document.getElementById('soSupplierFilter').value;
+            const shipTo = document.getElementById('soShipToFilter').value;
+            const risk = document.getElementById('soRiskFilter').value;
+            const action = document.getElementById('soActionFilter').value;
+            const status = document.getElementById('soStatusFilter').value;
+            const search = document.getElementById('soItemSearch').value.toLowerCase();
+
+            filteredStockoutData = stockoutData.filter(item => {
+                if (supplier && item.supplier !== supplier) return false;
+                if (shipTo && !item.shipTo.includes(shipTo)) return false;
+                if (risk === 'critical' && item.daysSupply >= 7) return false;
+                if (risk === 'warning' && (item.daysSupply < 7 || item.daysSupply >= 14)) return false;
+                if (risk === 'watch' && (item.daysSupply < 14 || item.daysSupply >= 30)) return false;
+                if (action && item.action !== action) return false;
+                if (status && stockoutStatus[item.id] !== status) return false;
+                if (search && !item.item.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            renderStockoutTable();
+        }
+
+        function clearStockoutFilters() {
+            document.getElementById('soSupplierFilter').value = '';
+            document.getElementById('soShipToFilter').value = '';
+            document.getElementById('soRiskFilter').value = '';
+            document.getElementById('soActionFilter').value = '';
+            document.getElementById('soStatusFilter').value = '';
+            document.getElementById('soItemSearch').value = '';
+            filteredStockoutData = [...stockoutData];
+            renderStockoutTable();
+        }
+
+        function toggleStockoutSelectAll() {
+            const checked = document.getElementById('soSelectAll').checked;
+            filteredStockoutData.forEach(item => { item.soSelected = checked; });
+            renderStockoutTable();
+        }
+
+        function toggleStockoutSelect(id) {
+            const item = stockoutData.find(i => i.id === id);
+            if (item) item.soSelected = !item.soSelected;
+            renderStockoutTable();
+        }
+
+        function saveStockoutNote(id, note) {
+            stockoutNotes[id] = note;
+            autoSave();
+        }
+
+        function setStockoutStatus(id, status) {
+            const prevStatus = stockoutStatus[id];
+            if (status) {
+                stockoutStatus[id] = status;
+                if (status === 'ORDERED' && prevStatus !== 'ORDERED') {
+                    const item = allData.find(i => i.id === id);
+                    if (item) addToHistory(item);
+                }
+            } else {
+                delete stockoutStatus[id];
+            }
+            itemStatus[id] = status || undefined;
+            if (!status) delete itemStatus[id];
+            renderStockoutTable();
+            autoSave();
+        }
+
+        function bulkSetStockoutStatus(status) {
+            const selected = filteredStockoutData.filter(i => i.soSelected);
+            if (selected.length === 0) { alert('No items selected'); return; }
+            selected.forEach(item => {
+                const prevStatus = stockoutStatus[item.id];
+                if (status) {
+                    stockoutStatus[item.id] = status;
+                    itemStatus[item.id] = status;
+                    if (status === 'ORDERED' && prevStatus !== 'ORDERED') addToHistory(item);
+                } else {
+                    delete stockoutStatus[item.id];
+                    delete itemStatus[item.id];
+                }
+                item.soSelected = false;
+            });
+            renderStockoutTable();
+            autoSave();
+            alert('Updated ' + selected.length + ' items');
+        }
+
+        function generateSupplierUrgency() {
+            const suppliers = {};
+
+            allData.forEach(item => {
+                if (!suppliers[item.supplier]) {
+                    suppliers[item.supplier] = {
+                        items: [],
+                        supplierCode: item.supplierCode || '',
+                        highConf: 0,
+                        orderItems: 0,
+                        stockoutRisk: 0,
+                        totalValue: 0,
+                        score: 0
+                    };
+                }
+
+                suppliers[item.supplier].items.push(item);
+
+                if (item.confidence >= 70) {
+                    suppliers[item.supplier].highConf++;
+                    suppliers[item.supplier].score += 10;
+                }
+
+                if (item.action === 'ORDER') {
+                    suppliers[item.supplier].orderItems++;
+                    suppliers[item.supplier].score += 15;
+                }
+
+                if (item.daysSupply !== '999+' && item.daysSupply < 14) {
+                    suppliers[item.supplier].stockoutRisk++;
+                    suppliers[item.supplier].score += 8;
+                }
+
+                if (item.monthly > 100) {
+                    suppliers[item.supplier].score += 3;
+                }
+            });
+
+            const sorted = Object.entries(suppliers)
+                .sort((a, b) => b[1].score - a[1].score)
+                .filter(([_, data]) => data.score > 0);
+
+            let html = '';
+
+            if (sorted.length === 0) {
+                html = `
+                    <div class="welcome">
+                        <h2>✅ No Urgent Supplier Actions</h2>
+                        <p>All suppliers are in good standing.</p>
+                    </div>
+                `;
+            } else {
+                html = `
+                    <div class="kpi-grid">
+                        <div class="kpi-card danger">
+                            <div class="kpi-value">${sorted.filter(([_, d]) => d.score > 50).length}</div>
+                            <div class="kpi-label">Critical Suppliers</div>
+                        </div>
+                        <div class="kpi-card warning">
+                            <div class="kpi-value">${sorted.filter(([_, d]) => d.score > 30 && d.score <= 50).length}</div>
+                            <div class="kpi-label">High Priority</div>
+                        </div>
+                        <div class="kpi-card info">
+                            <div class="kpi-value">${sorted.reduce((sum, [_, d]) => sum + d.orderItems, 0)}</div>
+                            <div class="kpi-label">Total Items to Order</div>
+                        </div>
+                    </div>
+
+                    <h2 style="margin-bottom: 20px;">⚡ Supplier Urgency Ranking</h2>
+                `;
+
+                sorted.slice(0, 20).forEach(([supplier, data]) => {
+                    const score = data.score;
+                    let level, levelClass;
+
+                    if (score > 50) {
+                        level = 'CRITICAL';
+                        levelClass = 'urgency-critical';
+                    } else if (score > 30) {
+                        level = 'HIGH';
+                        levelClass = 'urgency-high';
+                    } else if (score > 15) {
+                        level = 'MEDIUM';
+                        levelClass = 'urgency-medium';
+                    } else {
+                        level = 'LOW';
+                        levelClass = 'urgency-low';
+                    }
+
+                    const suppCode = data.supplierCode ? '<span style="color:#888; font-size:13px; margin-left:8px;">#' + data.supplierCode + '</span>' : '';
+                    html += `
+                        <div class="supplier-card">
+                            <div class="supplier-header">
+                                <div class="supplier-name">${supplier}${suppCode}</div>
+                                <div class="urgency-badge ${levelClass}">${level} (${score})</div>
+                            </div>
+                            <div style="color: #666; font-size: 14px;">
+                                <strong>${data.orderItems}</strong> items need ordering |
+                                <strong>${data.stockoutRisk}</strong> stockout risk |
+                                <strong>${data.highConf}</strong> high confidence |
+                                <strong>${data.items.length}</strong> total items
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '';
+            }
+
+            document.getElementById('urgencyContent').innerHTML = html;
+        }
+
+        function generateOverview() {
+            const orderCount = allData.filter(i => i.action === 'ORDER').length;
+            const reviewCount = allData.filter(i => i.action === 'REVIEW').length;
+            const stockoutCount = allData.filter(i => i.daysSupply !== '999+' && i.daysSupply < 14).length;
+            const highConfCount = allData.filter(i => i.confidence >= 70).length;
+            const pastDueCount = allData.filter(i => i.pastDue).length;
+
+            const withSupplier = allData.filter(i => i.supplierCode && i.supplier !== 'Unknown Supplier').length;
+            const withPOIntel = allData.filter(i => i.poCount > 0).length;
+            const withF4102 = allData.filter(i => i.f4102Leadtime > 0).length;
+            const sourceBuying = allData.filter(i => i.supplierSource && i.supplierSource.includes('Buying')).length;
+            const sourceF4102 = allData.filter(i => i.supplierSource && (i.supplierSource.includes('F4102') || i.supplierSource.includes('Item Master'))).length;
+            const sourcePO = allData.filter(i => i.supplierSource && i.supplierSource.includes('PO')).length;
+            const sourceNone = allData.filter(i => !i.supplierSource || i.supplierSource === 'NONE').length;
+
+            let html = `
+                <h2 style="margin-bottom: 20px;">📊 Dashboard Overview</h2>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card primary">
+                        <div class="kpi-value">${allData.length}</div>
+                        <div class="kpi-label">Total Items</div>
+                    </div>
+                    <div class="kpi-card danger">
+                        <div class="kpi-value">${orderCount}</div>
+                        <div class="kpi-label">Order Today</div>
+                    </div>
+                    <div class="kpi-card warning">
+                        <div class="kpi-value">${reviewCount}</div>
+                        <div class="kpi-label">Review</div>
+                    </div>
+                    <div class="kpi-card info">
+                        <div class="kpi-value">${stockoutCount}</div>
+                        <div class="kpi-label">Stockout Risk (<14d)</div>
+                    </div>
+                    <div class="kpi-card danger">
+                        <div class="kpi-value">${highConfCount}</div>
+                        <div class="kpi-label">High Confidence (≥70)</div>
+                    </div>
+                    <div class="kpi-card warning">
+                        <div class="kpi-value">${pastDueCount}</div>
+                        <div class="kpi-label">Past Due POs</div>
+                    </div>
+                </div>
+
+                <h3 style="margin: 20px 0 15px;">🧠 Intelligence Coverage</h3>
+                <div class="kpi-grid">
+                    <div class="kpi-card success">
+                        <div class="kpi-value">${Math.round(100*withSupplier/allData.length)}%</div>
+                        <div class="kpi-label">Supplier Coverage (${withSupplier}/${allData.length})</div>
+                    </div>
+                    <div class="kpi-card info">
+                        <div class="kpi-value">${Math.round(100*withPOIntel/allData.length)}%</div>
+                        <div class="kpi-label">PO History (${withPOIntel} items)</div>
+                    </div>
+                    <div class="kpi-card primary">
+                        <div class="kpi-value">${Math.round(100*withF4102/allData.length)}%</div>
+                        <div class="kpi-label">F4102 Lead Times (${withF4102} items)</div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:15px; margin: 10px 0 20px; flex-wrap:wrap;">
+                    <div style="font-size:13px;"><span class="source-buying">BUY</span> Buying Sheet: <strong>${sourceBuying}</strong></div>
+                    <div style="font-size:13px;"><span class="source-f4102">F4102</span> Item Master: <strong>${sourceF4102}</strong></div>
+                    <div style="font-size:13px;"><span class="source-po">PO</span> PO History: <strong>${sourcePO}</strong></div>
+                    <div style="font-size:13px;"><span class="source-none">NONE</span> Missing: <strong>${sourceNone}</strong></div>
+                </div>
+
+                <h3 style="margin: 30px 0 15px 0;">Top Priority Items (Confidence ≥ 60)</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Description</th>
+                                <th>Supplier</th>
+                                <th>Days</th>
+                                <th>Confidence</th>
+                                <th>Action</th>
+                                <th>Rec Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            const topItems = allData
+                .filter(i => i.confidence >= 60)
+                .sort((a, b) => b.confidence - a.confidence)
+                .slice(0, 50);
+
+            topItems.forEach(item => {
+                const confBadge = item.confidence >= 70 ? 'badge-danger' : 'badge-warning';
+                const actionBadge = item.action === 'ORDER' ? 'badge-danger' :
+                                   item.action === 'REVIEW' ? 'badge-warning' : 'badge-info';
+
+                html += `
+                    <tr>
+                        <td>${item.item}</td>
+                        <td>${item.description}</td>
+                        <td>${item.supplier}</td>
+                        <td>${item.daysSupply}</td>
+                        <td><span class="badge ${confBadge}">${item.confidence}</span></td>
+                        <td><span class="badge ${actionBadge}">${item.action}</span></td>
+                        <td><strong>${item.recQty > 0 ? item.recQty.toLocaleString() : '-'}</strong></td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('overviewContent').innerHTML = html;
+        }
+
+        function populateFilters() {
+            const suppliers = [...new Set(allData.map(item => item.supplier))].sort();
+            const supSelect = document.getElementById('supplierFilter');
+            supSelect.innerHTML = '<option value="">All Suppliers</option>';
+            suppliers.forEach(supplier => {
+                const option = document.createElement('option');
+                option.value = supplier;
+                option.textContent = supplier;
+                supSelect.appendChild(option);
+            });
+
+            const shipTos = new Set();
+            allData.forEach(item => {
+                if (item.shipTo) {
+                    const sts = item.shipTo.toString().split(',');
+                    sts.forEach(st => shipTos.add(st.trim()));
+                }
+            });
+            const sortedShipTos = [...shipTos].sort();
+            const shipSelect = document.getElementById('shipToFilter');
+            shipSelect.innerHTML = '<option value="">All Locations</option>';
+            sortedShipTos.forEach(st => {
+                const option = document.createElement('option');
+                option.value = st;
+                option.textContent = st;
+                shipSelect.appendChild(option);
+            });
+        }
+
+        function applyFilters() {
+            const supplier = document.getElementById('supplierFilter').value;
+            const shipTo = document.getElementById('shipToFilter').value;
+            const action = document.getElementById('actionFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const minConf = parseInt(document.getElementById('confidenceFilter').value) || 0;
+            const search = document.getElementById('itemSearch').value.toLowerCase();
+
+            filteredData = allData.filter(item => {
+                if (supplier && item.supplier !== supplier) return false;
+                if (shipTo && !item.shipTo.includes(shipTo)) return false;
+                if (action && item.action !== action) return false;
+                if (status && itemStatus[item.id] !== status) return false;
+                if (item.confidence < minConf) return false;
+                if (search && !item.item.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            renderTable();
+            updateStats();
+        }
+
+        function clearFilters() {
+            document.getElementById('supplierFilter').value = '';
+            document.getElementById('shipToFilter').value = '';
+            document.getElementById('actionFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('confidenceFilter').value = '';
+            document.getElementById('itemSearch').value = '';
+
+            filteredData = [...allData];
+            renderTable();
+            updateStats();
+        }
+
+        function getSourceBadge(src) {
+            if (!src || src === 'NONE') return '<span class="source-none">NONE</span>';
+            if (src.includes('Buying')) return '<span class="source-buying">BUY</span>';
+            if (src.includes('F4102') || src.includes('Item Master')) return '<span class="source-f4102">F4102</span>';
+            if (src.includes('PO')) return '<span class="source-po">PO</span>';
+            return '<span class="source-none">' + src.substring(0,4) + '</span>';
+        }
+
+        function getABCBadge(code) {
+            if (!code || code === 'nan') return '';
+            const c = code.toUpperCase();
+            const cls = c === 'A' ? 'abc-a' : c === 'B' ? 'abc-b' : c === 'C' ? 'abc-c' : 'abc-d';
+            return '<span class="abc-badge ' + cls + '">' + c + '</span>';
+        }
+
+        function toggleDetail(id) {
+            const item = allData.find(i => i.id === id);
+            if (item) {
+                item.expanded = !item.expanded;
+                renderTable();
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            filteredData.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'clickable-row';
+                const status = itemStatus[item.id] || '';
+
+                if (item.selected) row.classList.add('highlight-row');
+                if (status === 'ORDERED') row.classList.add('row-ordered');
+                else if (status === 'PENDING') row.classList.add('row-pending');
+                else if (status === 'SKIP') row.classList.add('row-skip');
+
+                const actionBadge = item.action === 'ORDER' ? 'badge-danger' :
+                                   item.action === 'REVIEW' ? 'badge-warning' :
+                                   item.action === 'EXPEDITE' ? 'badge-info' : 'badge-secondary';
+
+                const ltDisplay = item.f4102Leadtime || item.leadtime || '-';
+
+                let netAvailHTML = item.netAvailable;
+                if (item.netAvailable < 0) {
+                    netAvailHTML = '<span class="net-avail-negative">' + item.netAvailable + '</span>';
+                } else if (item.netAvailable < item.demandThruLT * 0.5) {
+                    netAvailHTML = '<span class="net-avail-warning">' + item.netAvailable + '</span>';
+                }
+
+                let netCovHTML = item.netCoverage;
+                if (item.netCoverage < 0) {
+                    netCovHTML = '<span class="net-cov-danger">' + item.netCoverage + '</span>';
+                } else if (item.netCoverage < item.demandThruLT * 0.25) {
+                    netCovHTML = '<span class="net-cov-warning">' + item.netCoverage + '</span>';
+                } else {
+                    netCovHTML = '<span class="net-cov-success">' + item.netCoverage + '</span>';
+                }
+
+                row.innerHTML = `
+                    <td><input type="checkbox" class="checkbox" ${item.selected ? 'checked' : ''} onchange="event.stopPropagation(); toggleSelect(${item.id})"></td>
+                    <td onclick="toggleDetail(${item.id})" style="cursor:pointer;">${item.expanded ? '▼' : '▶'} ${item.item}</td>
+                    <td>${item.description}</td>
+                    <td style="font-size:11px;">${item.supplierCode || '-'}</td>
+                    <td>${item.supplier}</td>
+                    <td>${item.shipTo || '-'}</td>
+                    <td>${item.totalOH}</td>
+                    <td>${item.committed}</td>
+                    <td>${item.openPO}</td>
+                    <td>${netAvailHTML}</td>
+                    <td>${netCovHTML}</td>
+                    <td>${ltDisplay}d</td>
+                    <td>${item.daysSupply}</td>
+                    <td><span class="badge ${actionBadge}">${item.action}</span></td>
+                    <td><strong>${item.recQty > 0 ? item.recQty : '-'}</strong></td>
+                    <td><input type="text" class="notes-input" value="${itemNotes[item.id] || ''}" onchange="saveNote(${item.id}, this.value)" placeholder="Note..."></td>
+                    <td>
+                        <select class="status-select" onchange="setStatus(${item.id}, this.value)">
+                            <option value="" ${status === '' ? 'selected' : ''}>-</option>
+                            <option value="ORDERED" ${status === 'ORDERED' ? 'selected' : ''}>Ordered</option>
+                            <option value="PENDING" ${status === 'PENDING' ? 'selected' : ''}>Pending</option>
+                            <option value="SKIP" ${status === 'SKIP' ? 'selected' : ''}>Skip</option>
+                        </select>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+
+                if (item.expanded) {
+                    const detailRow = document.createElement('tr');
+                    detailRow.className = 'detail-row';
+
+                    detailRow.innerHTML = '<td colspan="17"><div class="intel-panel"><div class="intel-grid">' +
+                        '<div class="intel-section"><div class="intel-section-title">Net Position</div>' +
+                        '<div class="intel-field"><span class="intel-label">OH + OO</span><span class="intel-value">' + (item.totalOH + item.openPO) + '</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">Committed</span><span class="intel-value">' + item.committed + '</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">Demand thru LT</span><span class="intel-value">' + item.demandThruLT + '</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">Net Available</span><span class="intel-value">' + item.netAvailable + '</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">Net Coverage</span><span class="intel-value">' + item.netCoverage + '</span></div>' +
+                        '</div>' +
+                        '<div class="intel-section"><div class="intel-section-title">PO History</div>' +
+                        '<div class="intel-field"><span class="intel-label">PO Count</span><span class="intel-value">' + (item.poCount || '-') + '</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">Avg PO Qty</span><span class="intel-value">' + (item.avgPOQty || '-') + '</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">Last PO Date</span><span class="intel-value">' + (item.lastPODate || '-') + '</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">PO Ship-To</span><span class="intel-value">' + (item.poShipTo || '-') + '</span></div>' +
+                        '</div>' +
+                        '<div class="intel-section"><div class="intel-section-title">F4102 Item Master</div>' +
+                        '<div class="intel-field"><span class="intel-label">F4102 ROP</span><span class="intel-value">' + (item.f4102ROP || '-') + '</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">F4102 Reorder Qty</span><span class="intel-value">' + (item.f4102ReorderQty || '-') + '</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">F4102 Lead Time</span><span class="intel-value">' + (item.f4102Leadtime || '-') + ' days</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">Stocking Type</span><span class="intel-value">' + (item.stockingType || '-') + '</span></div>' +
+                        '</div>' +
+                        '<div class="intel-section"><div class="intel-section-title">Classification</div>' +
+                        '<div class="intel-field"><span class="intel-label">ABC Sales</span><span class="intel-value">' + getABCBadge(item.abcSales) + (item.abcSales && item.abcSales !== 'nan' ? '' : '-') + '</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">Supplier Source</span><span class="intel-value">' + getSourceBadge(item.supplierSource) + '</span></div>' +
+                        '<div class="intel-field"><span class="intel-label">Monthly Usage</span><span class="intel-value">' + (item.monthly ? item.monthly.toLocaleString() : '-') + '</span></div>' +
+                        '</div>' +
+                        '</div></div></td>';
+                    tbody.appendChild(detailRow);
+                }
+            });
+        }
+
+        function toggleSelectAll() {
+            const checked = document.getElementById('selectAll').checked;
+            filteredData.forEach(item => {
+                item.selected = checked;
+                const original = allData.find(i => i.id === item.id);
+                if (original) original.selected = checked;
+            });
+            renderTable();
+            updateStats();
+            autoSave();
+        }
+
+        function toggleSelect(id) {
+            const item = allData.find(i => i.id === id);
+            if (item) {
+                item.selected = !item.selected;
+                const filtered = filteredData.find(i => i.id === id);
+                if (filtered) filtered.selected = item.selected;
+            }
+            updateStats();
+            autoSave();
+        }
+
+        function saveNote(id, note) {
+            itemNotes[id] = note;
+            autoSave();
+        }
+
+        function setStatus(id, status) {
+            const prevStatus = itemStatus[id];
+
+            if (status) {
+                itemStatus[id] = status;
+                if (status === 'ORDERED' && prevStatus !== 'ORDERED') {
+                    const item = allData.find(i => i.id === id);
+                    if (item) addToHistory(item);
+                }
+            } else {
+                delete itemStatus[id];
+            }
+
+            renderTable();
+            updateStats();
+            autoSave();
+        }
+
+        function bulkSetStatus(status) {
+            const selected = allData.filter(i => i.selected);
+            if (selected.length === 0) {
+                alert('No items selected');
+                return;
+            }
+
+            selected.forEach(item => {
+                const prevStatus = itemStatus[item.id];
+                if (status) {
+                    itemStatus[item.id] = status;
+                    if (status === 'ORDERED' && prevStatus !== 'ORDERED') {
+                        addToHistory(item);
+                    }
+                } else {
+                    delete itemStatus[item.id];
+                }
+            });
+
+            renderTable();
+            updateStats();
+            autoSave();
+            alert(`Updated ${selected.length} items`);
+        }
+
+        function addToHistory(item) {
+            orderHistory.push({
+                date: new Date().toISOString(),
+                item: item.item,
+                description: item.description,
+                supplier: item.supplier,
+                shipTo: item.shipTo,
+                qty: item.recQty,
+                notes: itemNotes[item.id] || ''
+            });
+            saveHistory();
+        }
+
+        function updateStats() {
+            document.getElementById('totalItems').textContent = allData.length;
+            document.getElementById('filteredItems').textContent = filteredData.length;
+            document.getElementById('selectedItems').textContent = allData.filter(i => i.selected).length;
+            document.getElementById('selectedCount').textContent = allData.filter(i => i.selected).length;
+
+            const ordered = Object.values(itemStatus).filter(s => s === 'ORDERED').length;
+            const pending = Object.values(itemStatus).filter(s => s === 'PENDING').length;
+            const skip = Object.values(itemStatus).filter(s => s === 'SKIP').length;
+
+            document.getElementById('orderedCount').textContent = ordered;
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('skipCount').textContent = skip;
+        }
+
+        function saveSession() {
+            const session = {
+                data: allData,
+                notes: itemNotes,
+                status: itemStatus,
+                stockoutNotes: stockoutNotes,
+                stockoutStatus: stockoutStatus,
+                supplierMaster: supplierMaster,
+                itemMasterLookup: itemMasterLookup,
+                poIntelLookup: poIntelLookup,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+
+            const indicator = document.getElementById('saveIndicator');
+            indicator.style.display = 'block';
+            setTimeout(() => { indicator.style.display = 'none'; }, 2000);
+        }
+
+        function autoSave() {
+            clearTimeout(window.autoSaveTimer);
+            window.autoSaveTimer = setTimeout(() => saveSession(), 2000);
+        }
+
+        function loadSession() {
+            const saved = localStorage.getItem(SESSION_KEY);
+            if (!saved) {
+                loadCachedLookups();
+                loadPOSupplierIntelligence();
+                return;
+            }
+
+            try {
+                const session = JSON.parse(saved);
+                allData = session.data;
+                itemNotes = session.notes;
+                itemStatus = session.status;
+                stockoutNotes = session.stockoutNotes || {};
+                stockoutStatus = session.stockoutStatus || {};
+                supplierMaster = session.supplierMaster || {};
+                if (session.itemMasterLookup) itemMasterLookup = session.itemMasterLookup;
+                if (session.poIntelLookup) poIntelLookup = session.poIntelLookup;
+                filteredData = [...allData];
+
+                if (allData.length > 0) {
+                    populateFilters();
+                    renderTable();
+                    updateStats();
+                    generateOrderToday();
+                    generateStockoutRisk();
+                    generateSupplierUrgency();
+                    generateOverview();
+
+                    document.getElementById('welcome').style.display = 'none';
+                    document.getElementById('tabNavigation').style.display = 'block';
+                    document.getElementById('toolbar').style.display = 'block';
+                    document.getElementById('statsBar').style.display = 'flex';
+                    document.getElementById('tableContainer').style.display = 'block';
+                    document.getElementById('exportBtn').disabled = false;
+                    document.getElementById('saveBtn').disabled = false;
+                    document.getElementById('historyBtn').disabled = false;
+                }
+            } catch (error) {
+                console.error('Error loading session:', error);
+            }
+
+            loadCachedLookups();
+            loadPOSupplierIntelligence();
+        }
+
+        function saveHistory() {
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(orderHistory));
+        }
+
+        function loadHistory() {
+            const saved = localStorage.getItem(HISTORY_KEY);
+            if (saved) {
+                try {
+                    orderHistory = JSON.parse(saved);
+                } catch (error) {
+                    console.error('Error loading history:', error);
+                }
+            }
+        }
+
+        function openHistoryModal() {
+            const content = document.getElementById('historyContent');
+            if (orderHistory.length === 0) {
+                content.innerHTML = '<p style="text-align: center; padding: 30px; color: #666;">No order history yet</p>';
+            } else {
+                let html = '<table style="width: 100%; font-size: 12px;"><thead><tr><th>Date</th><th>Item</th><th>Supplier</th><th>Ship-To</th><th>Qty</th><th>Notes</th></tr></thead><tbody>';
+                [...orderHistory].reverse().forEach(entry => {
+                    const date = new Date(entry.date);
+                    html += `<tr>
+                        <td>${date.toLocaleDateString()}</td>
+                        <td>${entry.item}</td>
+                        <td>${entry.supplier}</td>
+                        <td>${entry.shipTo}</td>
+                        <td>${entry.qty}</td>
+                        <td>${entry.notes}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                content.innerHTML = html;
+            }
+            document.getElementById('historyModal').classList.add('active');
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.remove('active');
+        }
+
+        function clearHistory() {
+            if (confirm('Clear all order history?')) {
+                orderHistory = [];
+                saveHistory();
+                openHistoryModal();
+            }
+        }
+
+        function exportHistory() {
+            if (orderHistory.length === 0) {
+                alert('No history to export');
+                return;
+            }
+
+            const exportData = orderHistory.map(entry => ({
+                'Date': new Date(entry.date).toLocaleString(),
+                'Item': entry.item,
+                'Description': entry.description,
+                'Supplier': entry.supplier,
+                'Ship To': entry.shipTo,
+                'Qty': entry.qty,
+                'Notes': entry.notes
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Order History");
+            XLSX.writeFile(wb, `Order_History_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        function exportToExcel() {
+            const exportData = filteredData.map(item => ({
+                'Selected': item.selected ? 'YES' : 'NO',
+                'Item Number': item.item,
+                'Description': item.description,
+                'Supplier Code': item.supplierCode,
+                'Supplier Name': item.supplier,
+                'Ship To': item.shipTo,
+                'On Hand': item.totalOH,
+                'Committed': item.committed,
+                'Open PO': item.openPO,
+                'Net Available': item.netAvailable,
+                'Net Coverage': item.netCoverage,
+                'Demand Thru LT': item.demandThruLT,
+                'Days Supply': item.daysSupply,
+                'Confidence': item.confidence,
+                'Action': item.action,
+                'Recommended Qty': item.recQty,
+                'PO Count': item.poCount || '',
+                'Avg PO Qty': item.avgPOQty || '',
+                'Last PO Date': item.lastPODate || '',
+                'PO Ship-To': item.poShipTo || '',
+                'F4102 ROP': item.f4102ROP || '',
+                'F4102 Reorder Qty': item.f4102ReorderQty || '',
+                'F4102 Lead Time': item.f4102Leadtime || '',
+                'Stocking Type': item.stockingType || '',
+                'ABC Sales': item.abcSales || '',
+                'Notes': itemNotes[item.id] || stockoutNotes[item.id] || '',
+                'Status': itemStatus[item.id] || stockoutStatus[item.id] || ''
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Planning Sheet");
+
+            const today = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `Planning_Intelligence_${today}.xlsx`);
+        }
+    </script>
+</body>
+</html>
