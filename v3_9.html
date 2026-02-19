@@ -775,6 +775,7 @@
                             <th><input type="checkbox" id="selectAll" class="checkbox" onclick="toggleSelectAll()"></th>
                             <th>Item</th>
                             <th>Description</th>
+                            <th title="Supplier Number">Supp #</th>
                             <th>Supplier</th>
                             <th title="Supplier data source">Src</th>
                             <th>Ship-To</th>
@@ -1883,6 +1884,7 @@ function processBuyingSheet(data, poLookup) {
                                 <th><input type="checkbox" class="checkbox" id="soSelectAll" onclick="toggleStockoutSelectAll()"></th>
                                 <th>Item</th>
                                 <th>Description</th>
+                                <th title="Supplier Number">Supp #</th>
                                 <th>Supplier</th>
                                 <th>Risk</th>
                                 <th>Days</th>
@@ -1935,6 +1937,7 @@ function processBuyingSheet(data, poLookup) {
                 html += '<td><input type="checkbox" class="checkbox" ' + (item.soSelected ? 'checked' : '') + ' onchange="toggleStockoutSelect(' + item.id + ')"></td>';
                 html += '<td>' + item.item + '</td>';
                 html += '<td>' + item.description + '</td>';
+                html += '<td style="font-size:11px;">' + (item.supplierCode || '-') + '</td>';
                 html += '<td>' + supplierDisplay + '</td>';
                 html += '<td><span class="' + riskClass + '">' + riskLabel + '</span></td>';
                 html += '<td><strong>' + item.daysSupply + '</strong></td>';
@@ -2057,6 +2060,7 @@ function processBuyingSheet(data, poLookup) {
                 if (!suppliers[item.supplier]) {
                     suppliers[item.supplier] = {
                         items: [],
+                        supplierCode: item.supplierCode || '',
                         highConf: 0,
                         orderItems: 0,
                         stockoutRisk: 0,
@@ -2138,10 +2142,11 @@ function processBuyingSheet(data, poLookup) {
                         levelClass = 'urgency-low';
                     }
 
+                    const suppCode = data.supplierCode ? '<span style="color:#888; font-size:13px; margin-left:8px;">#' + data.supplierCode + '</span>' : '';
                     html += `
                         <div class="supplier-card">
                             <div class="supplier-header">
-                                <div class="supplier-name">${supplier}</div>
+                                <div class="supplier-name">${supplier}${suppCode}</div>
                                 <div class="urgency-badge ${levelClass}">${level} (${score})</div>
                             </div>
                             <div style="color: #666; font-size: 14px;">
@@ -2414,6 +2419,7 @@ function processBuyingSheet(data, poLookup) {
                     <td><input type="checkbox" class="checkbox" ${item.selected ? 'checked' : ''} onchange="event.stopPropagation(); toggleSelect(${item.id})"></td>
                     <td onclick="toggleDetail(${item.id})" style="cursor:pointer;">${item.expanded ? '▼' : '▶'} ${item.item}</td>
                     <td>${item.description}</td>
+                    <td style="font-size:11px;">${item.supplierCode || '-'}</td>
                     <td>${item.supplier}</td>
                     <td>${getSourceBadge(item.supplierSource)}</td>
                     <td>${item.shipTo}</td>
@@ -2449,7 +2455,7 @@ function processBuyingSheet(data, poLookup) {
                     const lastPO = item.lastPODate || item.lastOrderDate || '-';
                     const poShipTo = item.poShipTo || item.typicalShipTo || '-';
 
-                    detailRow.innerHTML = '<td colspan="20"><div class="intel-panel"><div class="intel-grid">' +
+                    detailRow.innerHTML = '<td colspan="21"><div class="intel-panel"><div class="intel-grid">' +
                         '<div class="intel-section"><div class="intel-section-title">PO History</div>' +
                         '<div class="intel-field"><span class="intel-label">PO Count</span><span class="intel-value">' + (item.poCount || item.orderCount || 0) + '</span></div>' +
                         '<div class="intel-field"><span class="intel-label">Avg PO Qty</span><span class="intel-value">' + (item.avgPOQty || (item.avgQty ? item.avgQty.toLocaleString() : '-')) + '</span></div>' +
