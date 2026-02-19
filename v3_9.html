@@ -904,7 +904,7 @@
             <h2>📁 Upload Planning Files</h2>
             <div id="uploadAlert" style="display: none;"></div>
 
-            <div class="file-upload-grid">
+            <div class="file-upload-grid" style="grid-template-columns: repeat(3, 1fr);">
                 <div class="file-upload-box" id="buyingSheetBox" onclick="document.getElementById('buyingSheetInput').click()">
                     <div style="font-size: 24px; margin-bottom: 10px;">📊</div>
                     <div style="font-weight: bold;">Buying Sheet</div>
@@ -915,13 +915,25 @@
                 <div class="file-upload-box" id="openPOBox" onclick="document.getElementById('openPOInput').click()">
                     <div style="font-size: 24px; margin-bottom: 10px;">📦</div>
                     <div style="font-weight: bold;">Open POs</div>
-                    <div style="font-size: 12px; color: #666;">Optional</div>
+                    <div style="font-size: 12px; color: #666;">Optional - PO delivery dates</div>
                     <div id="openPOName" style="font-size: 11px; margin-top: 5px; color: #28a745;"></div>
                 </div>
+
+                <div class="file-upload-box" id="itemMasterBox" onclick="document.getElementById('itemMasterInput').click()">
+                    <div style="font-size: 24px; margin-bottom: 10px;">🧠</div>
+                    <div style="font-weight: bold;">Item Master (F4102)</div>
+                    <div style="font-size: 12px; color: #666;">Optional - Suppliers, LT, ABC</div>
+                    <div id="itemMasterName" style="font-size: 11px; margin-top: 5px; color: #28a745;"></div>
+                </div>
+            </div>
+
+            <div style="padding: 10px 0; font-size: 12px; color: #888; text-align: center;">
+                Upload your raw buying sheet daily. Item Master & Open POs add intelligence (suppliers, lead times, PO history). Refresh those weekly.
             </div>
 
             <input type="file" id="buyingSheetInput" accept=".xlsx,.xls,.csv" onchange="handleBuyingSheetUpload(event)">
             <input type="file" id="openPOInput" accept=".xlsx,.xls,.csv" onchange="handleOpenPOUpload(event)">
+            <input type="file" id="itemMasterInput" accept=".xlsx,.xls,.csv" onchange="handleItemMasterUpload(event)">
             <input type="file" id="pastPOInput" accept=".xlsx,.xls,.csv" onchange="handlePastPOUpload(event)">
 
             <div class="modal-buttons">
@@ -984,7 +996,10 @@
         let orderHistory = [];
         let buyingSheetData = null;
         let openPOData = null;
+        let itemMasterData = null;
         let supplierMaster = {};
+        let itemMasterLookup = {};
+        let poIntelLookup = {};
 
         const SESSION_KEY = 'raynor_planning_session_v39';
         const HISTORY_KEY = 'raynor_order_history_v39';
@@ -1018,14 +1033,21 @@
 
         function openUploadModal() {
             const session = localStorage.getItem(SESSION_KEY);
+            let alertHtml = '';
             if (session && allData.length > 0) {
-                document.getElementById('uploadAlert').innerHTML = `
-                    <div class="alert alert-info">
-                        ℹ️ <strong>Session found!</strong> Upload new files to start fresh, or cancel to continue.
-                    </div>
-                `;
-                document.getElementById('uploadAlert').style.display = 'block';
+                alertHtml += '<div class="alert alert-info" style="background:#e8f4fd;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;">ℹ️ <strong>Session found!</strong> Upload new files to start fresh, or cancel to continue.</div>';
             }
+            // Show cached intelligence status
+            const imCount = Object.keys(itemMasterLookup).length;
+            const poiCount = Object.keys(poIntelLookup).length;
+            if (imCount > 0 || poiCount > 0) {
+                alertHtml += '<div style="background:#d4edda;padding:10px;border-radius:6px;margin-bottom:10px;font-size:12px;">🧠 <strong>Cached Intelligence:</strong> ';
+                if (imCount > 0) alertHtml += 'Item Master (' + imCount + ' items) ';
+                if (poiCount > 0) alertHtml += '| PO Intel (' + poiCount + ' items) ';
+                alertHtml += '— will auto-merge with your raw buying sheet. Re-upload to refresh.</div>';
+            }
+            document.getElementById('uploadAlert').innerHTML = alertHtml;
+            document.getElementById('uploadAlert').style.display = alertHtml ? 'block' : 'none';
             document.getElementById('uploadModal').classList.add('active');
         }
 
@@ -1105,6 +1127,168 @@
             }
         }
 
+        function handleItemMasterUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('itemMasterName').textContent = file.name;
+                document.getElementById('itemMasterBox').classList.add('uploaded');
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        itemMasterData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                        document.getElementById('itemMasterName').textContent = file.name + ' (' + itemMasterData.length + ' rows)';
+                    } catch (error) {
+                        alert('Error reading Item Master: ' + error.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        // v3.9: Build Item Master lookup from F4102 data
+        function buildItemMasterLookup(data) {
+            itemMasterLookup = {};
+            if (!data || data.length === 0) return;
+
+            // Auto-detect column names (F4102 exports vary)
+            const cols = Object.keys(data[0]);
+            const findCol = (keywords) => {
+                for (const c of cols) {
+                    const cl = c.toLowerCase().trim();
+                    for (const kw of keywords) {
+                        if (cl.includes(kw)) return c;
+                    }
+                }
+                return null;
+            };
+
+            const itemCol = findCol(['2nd item', 'item number', 'short item']);
+            const primarySupCol = findCol(['primary supplier', 'primary sup']);
+            const ropCol = findCol(['reorder point', 'rop']);
+            const reorderQtyCol = findCol(['reorder quantity', 'reorder qty']);
+            const leadtimeCol = findCol(['leadtime level', 'lead time level', 'leadtime']);
+            const stockingCol = findCol(['stocking type']);
+            const abcSalesCol = findCol(['abc code 1', 'abc code- sales', 'abc sales']);
+            const abcMarginCol = findCol(['abc code 2', 'abc code- margin', 'abc margin']);
+            const abcInvCol = findCol(['abc code 3', 'abc code- investment', 'abc inv']);
+            const commCol = findCol(['commodity class', 'comm class']);
+
+            console.log('Item Master columns detected:', {itemCol, primarySupCol, ropCol, leadtimeCol, stockingCol});
+
+            data.forEach(row => {
+                const item = String(row[itemCol] || '').trim();
+                if (!item) return;
+
+                const primarySup = row[primarySupCol];
+                let supCode = '';
+                if (primarySup && !isNaN(primarySup) && primarySup !== 0) {
+                    supCode = String(Math.floor(Number(primarySup)));
+                }
+
+                itemMasterLookup[item] = {
+                    primarySupplier: supCode,
+                    rop: row[ropCol] ? Math.floor(Number(row[ropCol])) || 0 : 0,
+                    reorderQty: row[reorderQtyCol] ? Math.floor(Number(row[reorderQtyCol])) || 0 : 0,
+                    leadtime: row[leadtimeCol] ? Math.floor(Number(row[leadtimeCol])) || 0 : 0,
+                    stockingType: String(row[stockingCol] || '').trim(),
+                    abcSales: String(row[abcSalesCol] || '').trim(),
+                    abcMargin: String(row[abcMarginCol] || '').trim(),
+                    abcInventory: String(row[abcInvCol] || '').trim(),
+                    commClass: String(row[commCol] || '').trim()
+                };
+            });
+
+            console.log('Built Item Master lookup for', Object.keys(itemMasterLookup).length, 'items');
+
+            // Persist to localStorage for daily reuse
+            localStorage.setItem('raynor_item_master_v39', JSON.stringify({
+                data: itemMasterLookup,
+                lastUpdated: new Date().toISOString().split('T')[0]
+            }));
+        }
+
+        // v3.9: Build PO intelligence lookup from Open POs
+        function buildPOIntelLookup(data) {
+            poIntelLookup = {};
+            if (!data || data.length === 0) return;
+
+            const itemCounts = {};
+
+            data.forEach(row => {
+                const item = String(row['2nd Item Number'] || row['Item Number'] || row['Short Item No'] || '').trim();
+                if (!item) return;
+
+                const supplier = row['Supplier Number'] || row['Supp No'] || '';
+                const shipTo = row['Ship To Number'] || row['Ship To'] || '';
+                const qty = parseFloat(row['Quantity Ordered'] || 0);
+
+                if (!itemCounts[item]) {
+                    itemCounts[item] = { orders: [], suppliers: {}, shipTos: {} };
+                }
+
+                itemCounts[item].orders.push(qty);
+
+                if (supplier) {
+                    const sc = String(Math.floor(Number(supplier)));
+                    itemCounts[item].suppliers[sc] = (itemCounts[item].suppliers[sc] || 0) + 1;
+                }
+                if (shipTo) {
+                    const st = String(Math.floor(Number(shipTo)));
+                    itemCounts[item].shipTos[st] = (itemCounts[item].shipTos[st] || 0) + 1;
+                }
+            });
+
+            Object.keys(itemCounts).forEach(item => {
+                const d = itemCounts[item];
+                const orders = d.orders.filter(q => q > 0);
+                const topSup = Object.keys(d.suppliers).length > 0
+                    ? Object.keys(d.suppliers).reduce((a, b) => d.suppliers[a] > d.suppliers[b] ? a : b)
+                    : '';
+                const topShipTo = Object.keys(d.shipTos).length > 0
+                    ? Object.keys(d.shipTos).reduce((a, b) => d.shipTos[a] > d.shipTos[b] ? a : b)
+                    : '';
+
+                poIntelLookup[item] = {
+                    poCount: d.orders.length,
+                    avgPOQty: orders.length > 0 ? Math.round(orders.reduce((s, q) => s + q, 0) / orders.length) : 0,
+                    topSupplier: topSup,
+                    topShipTo: topShipTo
+                };
+            });
+
+            console.log('Built PO intelligence for', Object.keys(poIntelLookup).length, 'items');
+
+            // Persist
+            localStorage.setItem('raynor_po_intel_v39', JSON.stringify({
+                data: poIntelLookup,
+                lastUpdated: new Date().toISOString().split('T')[0]
+            }));
+        }
+
+        // v3.9: Load cached lookups from localStorage
+        function loadCachedLookups() {
+            const imStored = localStorage.getItem('raynor_item_master_v39');
+            if (imStored) {
+                try {
+                    const parsed = JSON.parse(imStored);
+                    itemMasterLookup = parsed.data || {};
+                    console.log('Loaded cached Item Master:', Object.keys(itemMasterLookup).length, 'items, from', parsed.lastUpdated);
+                } catch(e) {}
+            }
+            const poStored = localStorage.getItem('raynor_po_intel_v39');
+            if (poStored) {
+                try {
+                    const parsed = JSON.parse(poStored);
+                    poIntelLookup = parsed.data || {};
+                    console.log('Loaded cached PO intel:', Object.keys(poIntelLookup).length, 'items, from', parsed.lastUpdated);
+                } catch(e) {}
+            }
+        }
+
         function processAllFiles() {
             if (!buyingSheetData) {
                 alert('Please upload buying sheet');
@@ -1113,6 +1297,14 @@
 
             try {
                 buildSupplierMaster(buyingSheetData);
+
+                // v3.9: Build lookups from uploaded files (or use cached)
+                if (itemMasterData) {
+                    buildItemMasterLookup(itemMasterData);
+                }
+                if (openPOData) {
+                    buildPOIntelLookup(openPOData);
+                }
 
                 let poLookup = {};
                 if (openPOData) {
@@ -1440,20 +1632,55 @@ function processBuyingSheet(data, poLookup) {
                 const key = `${supplier.trim()}_${item}`;
                 const intel = historyIntel[key] || {};
 
-                // v3.9: Read Master Intelligence fields from CSV
-                const supplierSource = row['Supplier_Source'] || '';
-                const poCount = parseInt(row['PO_Count']) || 0;
-                const avgPOQty = parseInt(row['Avg_PO_Qty']) || 0;
+                // v3.9: Read intelligence fields — from enriched CSV columns OR browser-side lookups
+                const imData = itemMasterLookup[item] || {};
+                const poData = poIntelLookup[item] || {};
+
+                // Supplier source tracking
+                let supplierSource = row['Supplier_Source'] || '';
+                if (!supplierSource) {
+                    if (row['Alpha Name'] && row['Supplier']) supplierSource = 'Buying Sheet';
+                    else if (imData.primarySupplier && supplierCode === imData.primarySupplier) supplierSource = 'Item Master (F4102)';
+                    else if (poData.topSupplier && supplierCode === poData.topSupplier) supplierSource = 'PO History';
+                    else if (!supplierCode) supplierSource = 'NONE';
+                    else supplierSource = 'Buying Sheet';
+                }
+
+                // Try Item Master for missing supplier (browser-side merge)
+                if ((!supplierCode || supplier === 'Unknown Supplier') && imData.primarySupplier) {
+                    supplierCode = imData.primarySupplier;
+                    if (supplierMaster[supplierCode]) {
+                        supplier = supplierMaster[supplierCode];
+                    } else {
+                        supplier = 'Supplier ' + supplierCode;
+                    }
+                    supplierSource = 'Item Master (F4102)';
+                }
+
+                // Try PO history for missing supplier
+                if ((!supplierCode || supplier === 'Unknown Supplier') && poData.topSupplier) {
+                    supplierCode = poData.topSupplier;
+                    if (supplierMaster[supplierCode]) {
+                        supplier = supplierMaster[supplierCode];
+                    } else {
+                        supplier = 'Supplier ' + supplierCode;
+                    }
+                    supplierSource = 'PO History';
+                }
+
+                // Intelligence fields: prefer CSV columns, fall back to browser lookups
+                const poCount = parseInt(row['PO_Count']) || poData.poCount || 0;
+                const avgPOQty = parseInt(row['Avg_PO_Qty']) || poData.avgPOQty || 0;
                 const lastPODate = row['Last_PO_Date'] || '';
-                const poShipTo = row['PO_Ship_To'] || '';
-                const f4102ROP = parseInt(row['F4102_ROP']) || 0;
-                const f4102ReorderQty = parseInt(row['F4102_Reorder_Qty']) || 0;
-                const f4102Leadtime = parseInt(row['F4102_Leadtime']) || 0;
-                const stockingType = row['Stocking_Type'] || '';
-                const abcSales = row['ABC_Sales'] || '';
-                const abcMargin = row['ABC_Margin'] || '';
-                const abcInventory = row['ABC_Inventory'] || '';
-                const commClass = row['Comm_Class'] || '';
+                const poShipTo = row['PO_Ship_To'] || poData.topShipTo || '';
+                const f4102ROP = parseInt(row['F4102_ROP']) || imData.rop || 0;
+                const f4102ReorderQty = parseInt(row['F4102_Reorder_Qty']) || imData.reorderQty || 0;
+                const f4102Leadtime = parseInt(row['F4102_Leadtime']) || imData.leadtime || 0;
+                const stockingType = row['Stocking_Type'] || imData.stockingType || '';
+                const abcSales = row['ABC_Sales'] || imData.abcSales || '';
+                const abcMargin = row['ABC_Margin'] || imData.abcMargin || '';
+                const abcInventory = row['ABC_Inventory'] || imData.abcInventory || '';
+                const commClass = row['Comm_Class'] || imData.commClass || '';
 
                 return {
                     id: index,
@@ -2360,6 +2587,8 @@ function processBuyingSheet(data, poLookup) {
                 stockoutNotes: stockoutNotes,
                 stockoutStatus: stockoutStatus,
                 supplierMaster: supplierMaster,
+                itemMasterLookup: itemMasterLookup,
+                poIntelLookup: poIntelLookup,
                 timestamp: new Date().toISOString()
             };
             localStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -2386,6 +2615,8 @@ function processBuyingSheet(data, poLookup) {
                 stockoutNotes = session.stockoutNotes || {};
                 stockoutStatus = session.stockoutStatus || {};
                 supplierMaster = session.supplierMaster || {};
+                if (session.itemMasterLookup) itemMasterLookup = session.itemMasterLookup;
+                if (session.poIntelLookup) poIntelLookup = session.poIntelLookup;
                 filteredData = [...allData];
 
                 if (allData.length > 0) {
@@ -2530,6 +2761,7 @@ function processBuyingSheet(data, poLookup) {
         window.addEventListener('DOMContentLoaded', function() {
             loadSavedIntelligence();
             loadPOSupplierIntelligence();
+            loadCachedLookups();
         });
     </script>
 </body>
