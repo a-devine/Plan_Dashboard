@@ -857,6 +857,7 @@
                             <th title="Open PO Quantity">OO</th>
                             <th title="Net Available = OH + OO - Commit">Net Avail</th>
                             <th title="Net Coverage = OH + OO - Commit - Demand thru LT">Net Cov</th>
+                            <th title="Reorder Point">ROP</th>
                             <th title="Lead Time (days)">LT</th>
                             <th title="Request Date = Today + Lead Time">Req Date</th>
                             <th title="Days of Supply">Days</th>
@@ -1932,6 +1933,7 @@
                                 <th title="Open PO">OO</th>
                                 <th title="Net Available">Net Avail</th>
                                 <th title="Net Coverage">Net Cov</th>
+                                <th title="Reorder Point">ROP</th>
                                 <th title="Lead Time">LT</th>
                                 <th title="Request Date = Today + LT">Req Date</th>
                                 <th title="Days Supply">Days</th>
@@ -1988,6 +1990,7 @@
                     netCovHTML = '<span class="net-cov-success">' + item.netCoverage + '</span>';
                 }
                 html += '<td>' + netCovHTML + '</td>';
+                html += '<td style="font-size:11px;">' + (item.rop || item.f4102ROP || '-') + '</td>';
                 const soLtDays = item.f4102Leadtime || item.leadtime || 14;
                 const soReqDate = new Date();
                 soReqDate.setDate(soReqDate.getDate() + soLtDays);
@@ -2473,6 +2476,7 @@
                     <td>${item.openPO}</td>
                     <td>${netAvailHTML}</td>
                     <td>${netCovHTML}</td>
+                    <td style="font-size:11px;">${item.rop || item.f4102ROP || '-'}</td>
                     <td>${ltDisplay}d</td>
                     <td style="font-size:11px; white-space:nowrap;">${reqDateStr}</td>
                     <td>${item.daysSupply}</td>
@@ -2496,7 +2500,7 @@
                     const detailRow = document.createElement('tr');
                     detailRow.className = 'detail-row';
 
-                    detailRow.innerHTML = '<td colspan="19"><div class="intel-panel"><div class="intel-grid">' +
+                    detailRow.innerHTML = '<td colspan="20"><div class="intel-panel"><div class="intel-grid">' +
                         '<div class="intel-section"><div class="intel-section-title">Net Position</div>' +
                         '<div class="intel-field"><span class="intel-label">OH + OO</span><span class="intel-value">' + (item.totalOH + item.openPO) + '</span></div>' +
                         '<div class="intel-field"><span class="intel-label">Committed</span><span class="intel-value">' + item.committed + '</span></div>' +
