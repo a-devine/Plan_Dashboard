@@ -2637,12 +2637,24 @@
                 status: itemStatus,
                 stockoutNotes: stockoutNotes,
                 stockoutStatus: stockoutStatus,
-                supplierMaster: supplierMaster,
-                itemMasterLookup: itemMasterLookup,
-                poIntelLookup: poIntelLookup,
                 timestamp: new Date().toISOString()
             };
-            localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+            try {
+                localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+            } catch(e) {
+                console.warn('Session quota exceeded, saving annotations only:', e);
+                try {
+                    localStorage.setItem(SESSION_KEY, JSON.stringify({
+                        notes: itemNotes,
+                        status: itemStatus,
+                        stockoutNotes: stockoutNotes,
+                        stockoutStatus: stockoutStatus,
+                        timestamp: new Date().toISOString()
+                    }));
+                } catch(e2) {
+                    console.error('Cannot save session:', e2);
+                }
+            }
 
             const indicator = document.getElementById('saveIndicator');
             indicator.style.display = 'block';
@@ -2664,14 +2676,13 @@
 
             try {
                 const session = JSON.parse(saved);
-                allData = session.data;
-                itemNotes = session.notes;
-                itemStatus = session.status;
+                allData = session.data || [];
+                itemNotes = session.notes || {};
+                itemStatus = session.status || {};
                 stockoutNotes = session.stockoutNotes || {};
                 stockoutStatus = session.stockoutStatus || {};
-                supplierMaster = session.supplierMaster || {};
-                if (session.itemMasterLookup) itemMasterLookup = session.itemMasterLookup;
-                if (session.poIntelLookup) poIntelLookup = session.poIntelLookup;
+                loadCachedLookups();
+                loadPOSupplierIntelligence();
                 filteredData = [...allData];
 
                 if (allData.length > 0) {
