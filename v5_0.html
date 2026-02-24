@@ -1625,7 +1625,23 @@
             }
         }
 
+        function buildHistoryIntelMap() {
+            const intel = {};
+            Object.keys(poIntelLookup).forEach(function(itemNum) {
+                const poi = poIntelLookup[itemNum];
+                const recent = poi.recentOrders || [];
+                intel[itemNum] = {
+                    avgQty:        poi.avgPOQty || 0,
+                    maxQty:        recent.length > 0 ? Math.max.apply(null, recent) : (poi.avgPOQty || 0),
+                    orderCount:    poi.poCount  || 0,
+                    lastOrderDate: ''
+                };
+            });
+            return intel;
+        }
+
         function processBuyingSheet(data, poLookup) {
+            const historyIntel = buildHistoryIntelMap();
             return data.map((row, index) => {
                 const item = row['Item Number'] || '';
 
@@ -1709,14 +1725,30 @@
                 else if (netAvailable < 0) action = 'REVIEW';
                 else action = 'NO_ACTION';
 
-                let recQty = 0;
-                if (action === 'ORDER' || action === 'REVIEW') {
-                    recQty = Math.max(0, Math.abs(netCoverage) + (demandThruLT * 0.1));
-                    const moq = parseFloat(row['MRQ (Min Release Qty)'] || 0);
-                    if (moq > 0 && recQty > 0) {
-                        recQty = Math.ceil(recQty / moq) * moq;
-                    }
-                }
+                const moq = parseFloat(row['MRQ (Min Release Qty)'] || 0);
+                const engineStatus = action === 'ORDER' ? 'ORDER NOW' :
+                                     action === 'EXPEDITE' ? 'ORDER NOW' :
+                                     action === 'REVIEW' ? 'REVIEW' : 'OK';
+                const recResult = calculateRecQty({
+                    monthlyDemand:  monthly,
+                    annualUsage:    annual,
+                    leadTime:       f4102Leadtime || leadtime,
+                    onHand:         totalOH,
+                    openPO:         openPO,
+                    committed:      committed,
+                    cushion:        netCoverage,
+                    leadTimeDemand: demandThruLT,
+                    moq:            moq,
+                    boxQty:         0,
+                    crateQty:       0,
+                    supplier:       supplier,
+                    status:         engineStatus,
+                    itemNumber:     item,
+                    item:           item
+                }, historyIntel);
+                const recQty      = recResult.qty;
+                const recQtyNotes = recResult.notes;
+                const recQtyFlags = recResult.flags;
 
                 const imData = itemMasterLookup[item] || {};
                 const poData = poIntelLookup[item] || {};
@@ -1785,8 +1817,12 @@
                     confidence: Math.floor(conf),
                     action: action,
                     recQty: Math.floor(recQty),
+                    recQtyNotes: recQtyNotes,
+                    recQtyFlags: recQtyFlags,
                     leadtime: leadtime,
                     monthly: monthly,
+                    annual: annual,
+                    moq: moq,
                     selected: false,
                     supplierSource: supplierSource,
                     poCount: poCount,
@@ -1870,7 +1906,7 @@
                             <td>${item.netAvailable}</td>
                             <td>${item.daysSupply}</td>
                             <td><span class="badge ${confBadge}">${item.confidence}</span></td>
-                            <td><strong>${item.recQty.toLocaleString()}</strong></td>
+                            <td>${renderRecQtyCell(item.recQty, item.recQtyNotes, item.recQtyFlags)}</td>
                         </tr>
                     `;
                 });
@@ -2053,7 +2089,7 @@
                 html += '<td style="font-size:11px; white-space:nowrap;">' + soReqDateStr + '</td>';
                 html += '<td><strong>' + item.daysSupply + '</strong></td>';
                 html += '<td><span class="badge ' + actionBadge + '">' + item.action + '</span></td>';
-                html += '<td><strong>' + (item.recQty > 0 ? item.recQty.toLocaleString() : '-') + '</strong></td>';
+                html += '<td>' + renderRecQtyCell(item.recQty, item.recQtyNotes, item.recQtyFlags) + '</td>';
                 html += '<td style="font-size:11px; color:#666;">' + (soAvgPO > 0 ? Math.round(soAvgPO).toLocaleString() : '-') + '</td>';
                 html += '<td><input type="text" class="notes-input" value="' + (stockoutNotes[item.id] || '') + '" onchange="saveStockoutNote(' + item.id + ', this.value)" placeholder="Note..."></td>';
                 html += '<td><select class="status-select" onchange="setStockoutStatus(' + item.id + ', this.value)">';
@@ -2373,7 +2409,7 @@
                         <td>${item.daysSupply}</td>
                         <td><span class="badge ${confBadge}">${item.confidence}</span></td>
                         <td><span class="badge ${actionBadge}">${item.action}</span></td>
-                        <td><strong>${item.recQty > 0 ? item.recQty.toLocaleString() : '-'}</strong></td>
+                        <td>${renderRecQtyCell(item.recQty, item.recQtyNotes, item.recQtyFlags)}</td>
                     </tr>
                 `;
             });
@@ -2533,7 +2569,7 @@
                     <td style="font-size:11px; white-space:nowrap;">${reqDateStr}</td>
                     <td>${item.daysSupply}</td>
                     <td><span class="badge ${actionBadge}">${item.action}</span></td>
-                    <td><strong>${item.recQty > 0 ? item.recQty : '-'}</strong></td>
+                    <td>${renderRecQtyCell(item.recQty, item.recQtyNotes, item.recQtyFlags)}</td>
                     <td style="font-size:11px; color:#666;">${avgPODisplay !== '-' ? Math.round(avgPODisplay).toLocaleString() : '-'}</td>
                     <td><input type="text" class="notes-input" value="${itemNotes[item.id] || ''}" onchange="saveNote(${item.id}, this.value)" placeholder="Note..."></td>
                     <td>
@@ -2979,6 +3015,166 @@
             tip.classList.add('tt-visible');
             _positionTip(el);
         }
+
+        // ═══════════════════════════════════════════════════════
+        //  RECOMMENDED QTY ENGINE  v2.0
+        // ═══════════════════════════════════════════════════════
+        const SUPPLIER_CONFIG = {
+            canimex: {
+                identifiers: ['120079', 'CANIMEX'],
+                leadTimeMultiplier: 1.25,
+                extraSafetyWeeks: 0.75,
+                alwaysRoundToBox: true,
+                deadlineDay: 2,
+                deadlineHour: 12,
+            },
+            westEnd: {
+                identifiers: ['WEST END', 'WEST_END'],
+                leadTimeMultiplier: 1.0,
+                extraSafetyWeeks: 1.0,
+                alwaysRoundToBox: false,
+            },
+            tigerDrylac: {
+                identifiers: ['TIGER', 'DRYLAC'],
+                leadTimeMultiplier: 1.0,
+                extraSafetyWeeks: 0,
+                alwaysRoundToBox: false,
+                forceSpikeSmoothingAlways: true,
+            },
+        };
+        const SEASONAL_FACTOR = { 0:0.70,1:0.85,2:1.15,3:1.15,4:1.15,5:1.25,6:1.25,7:1.25,8:1.00,9:1.00,10:0.75,11:0.70 };
+        const DEFAULT_LEAD_TIME_DAYS  = 21;
+        const DEFAULT_SAFETY_WEEKS    = 2.0;
+        const SAFETY_WEEKS_LONG_LT    = 3.0;
+        const SAFETY_WEEKS_HIGH_RUNNER = 1.5;
+        const SAFETY_WEEKS_SLOW_MOVER  = 3.5;
+        const SPIKE_THRESHOLD          = 1.5;
+        const DEFERRED_ORDER_THRESHOLD = 0.25;
+
+        function calculateRecQty(item, historyIntel) {
+            const notes = [], flags = [];
+            if (item.status === 'EXCESS' && (item.cushion == null || item.cushion >= 0))
+                return { qty: 0, notes: ['No order — EXCESS coverage'], flags: [] };
+            if (item.status === 'REVIEW') {
+                const monthly = parseFloat(item.monthlyDemand) || 0;
+                if (monthly === 0) return { qty: 0, notes: ['REVIEW — zero/unknown demand'], flags: ['REVIEW'] };
+            }
+            const supplierCfg = _getSupplierConfig(item.supplier);
+            const { weeklyDemand, demandNotes, demandFlags } = _calcSmoothedDemand(item, supplierCfg);
+            notes.push(...demandNotes); flags.push(...demandFlags);
+            if (weeklyDemand <= 0) return { qty: 0, notes: [...notes, 'Effective demand = 0'], flags };
+            const rawLTDays = parseFloat(item.leadTime) || DEFAULT_LEAD_TIME_DAYS;
+            const ltMult    = supplierCfg ? supplierCfg.leadTimeMultiplier : 1.0;
+            const effLTDays = rawLTDays * ltMult;
+            if (ltMult > 1.0) notes.push('LT risk multiplier ' + ltMult + 'x → effective LT ' + effLTDays.toFixed(0) + ' days');
+            if (supplierCfg && supplierCfg.deadlineDay != null) {
+                const now = new Date(), dayOfWk = now.getDay(), hour = now.getHours();
+                const missed = dayOfWk > supplierCfg.deadlineDay || (dayOfWk === supplierCfg.deadlineDay && hour >= supplierCfg.deadlineHour);
+                if (missed) {
+                    notes.push('⚠️ Past cutoff — effective LT extended to ' + (effLTDays + 7).toFixed(0) + ' days');
+                    flags.push('DEADLINE_MISSED');
+                    return _finalizeRecQty(item, historyIntel, weeklyDemand, (effLTDays + 7) / 7, supplierCfg, notes, flags);
+                }
+            }
+            return _finalizeRecQty(item, historyIntel, weeklyDemand, effLTDays / 7, supplierCfg, notes, flags);
+        }
+
+        function _finalizeRecQty(item, historyIntel, weeklyDemand, effLTWeeks, supplierCfg, notes, flags) {
+            const annualTurns = weeklyDemand * 52;
+            let safetyWeeks = DEFAULT_SAFETY_WEEKS, safetyReason = 'default 2-week safety';
+            if (effLTWeeks >= 30 / 7) { safetyWeeks = SAFETY_WEEKS_LONG_LT; safetyReason = 'long LT ≥30d → 3wk safety'; }
+            else if (annualTurns < 72) { safetyWeeks = SAFETY_WEEKS_SLOW_MOVER; safetyReason = 'slow mover → ' + SAFETY_WEEKS_SLOW_MOVER + 'wk safety'; flags.push('SLOW_MOVER'); }
+            else if (annualTurns > 500) { safetyWeeks = SAFETY_WEEKS_HIGH_RUNNER; safetyReason = 'high runner → ' + SAFETY_WEEKS_HIGH_RUNNER + 'wk safety'; }
+            if (supplierCfg && supplierCfg.extraSafetyWeeks) { safetyWeeks += supplierCfg.extraSafetyWeeks; safetyReason += ' +' + supplierCfg.extraSafetyWeeks + 'wk supplier buffer'; }
+            notes.push('Safety: ' + safetyWeeks.toFixed(2) + ' wks (' + safetyReason + ')');
+            const targetInventory = (effLTWeeks + safetyWeeks) * weeklyDemand;
+            const onHand = parseFloat(item.onHand) || 0, openPO = parseFloat(item.openPO) || 0, committed = parseFloat(item.committed) || 0;
+            let effOpenPO = openPO;
+            if (openPO > 0 && item.cushion != null && item.cushion < 0) { effOpenPO = openPO * 0.80; notes.push('⚠️ Open PO discounted 20% — cushion negative, verify in JDE'); flags.push('STALE_PO_RISK'); }
+            const netPos = onHand + effOpenPO - committed;
+            const rawNeed = Math.max(0, targetInventory - netPos);
+            if (rawNeed <= 0) { notes.push('No order needed (net pos ' + netPos.toFixed(0) + ' ≥ target ' + targetInventory.toFixed(0) + ')'); return { qty: 0, notes, flags }; }
+            notes.push('Target: ' + targetInventory.toFixed(0) + ' (LT ' + effLTWeeks.toFixed(2) + 'wk + safety ' + safetyWeeks.toFixed(2) + 'wk × ' + weeklyDemand.toFixed(1) + '/wk)');
+            notes.push('Net pos: ' + netPos.toFixed(0) + ' → Raw need: ' + rawNeed.toFixed(0));
+            const itemNum = String(item.itemNumber || item.item || '');
+            const hist = historyIntel && historyIntel[itemNum] ? historyIntel[itemNum] : null;
+            if (hist && hist.avgQty > 0 && hist.orderCount >= 2) {
+                notes.push('History: avg PO ' + hist.avgQty.toFixed(0) + ' (' + hist.orderCount + ' orders)');
+                if (rawNeed < hist.avgQty * DEFERRED_ORDER_THRESHOLD) {
+                    if (item.status === 'CRITICAL' || item.status === 'ORDER NOW') { notes.push('⚠️ Small vs history but status urgent — ordering'); flags.push('SMALL_VS_HISTORY'); }
+                    else { notes.push('Need < 25% of typical PO — consider deferring'); flags.push('DEFER_CANDIDATE'); return { qty: 0, notes, flags }; }
+                }
+                if (rawNeed > hist.maxQty * 1.5) { notes.push('⚠️ Exceeds 1.5× historical max (' + hist.maxQty.toFixed(0) + ') — verify demand'); flags.push('EXCEEDS_HISTORY'); }
+            }
+            const { finalQty, packNotes, packFlags } = _applyPackagingRecQty(rawNeed, item, supplierCfg);
+            notes.push(...packNotes); flags.push(...packFlags);
+            const monthlyDemand = weeklyDemand * 4.33;
+            if (finalQty > monthlyDemand * 6) { notes.push('⚠️ Large order: ' + finalQty + ' = ' + (finalQty/monthlyDemand).toFixed(1) + ' months — verify'); flags.push('LARGE_ORDER'); }
+            return { qty: finalQty, notes, flags };
+        }
+
+        function _calcSmoothedDemand(item, supplierCfg) {
+            const demandNotes = [], demandFlags = [];
+            const rawMonthly = parseFloat(item.monthlyDemand) || 0;
+            const annual = parseFloat(item.annualUsage) || 0;
+            const annualAvg = annual > 0 ? annual / 12 : rawMonthly;
+            let smoothed = rawMonthly;
+            if (supplierCfg && supplierCfg.forceSpikeSmoothingAlways) { smoothed = annualAvg; demandNotes.push('Demand smoothed to annual avg ' + annualAvg.toFixed(1) + '/mo (supplier rule)'); }
+            else if (annualAvg > 0 && rawMonthly > annualAvg * SPIKE_THRESHOLD) { smoothed = annualAvg; demandNotes.push('⚠️ Spike detected (' + rawMonthly.toFixed(1) + ' vs avg ' + annualAvg.toFixed(1) + ') — smoothed'); demandFlags.push('SPIKE_SMOOTHED'); }
+            const month = new Date().getMonth(), seasonFactor = SEASONAL_FACTOR[month] || 1.0;
+            let adjusted = smoothed;
+            if (seasonFactor !== 1.0) { adjusted = smoothed * seasonFactor; demandNotes.push('Seasonal ' + seasonFactor + '× (' + (seasonFactor > 1 ? 'peak' : 'slow') + ') → ' + adjusted.toFixed(1) + '/mo'); if (seasonFactor >= 1.15) demandFlags.push('PEAK_SEASON'); if (seasonFactor <= 0.75) demandFlags.push('SLOW_SEASON'); }
+            return { weeklyDemand: adjusted / 4.33, demandNotes, demandFlags };
+        }
+
+        function _applyPackagingRecQty(rawNeed, item, supplierCfg) {
+            const packNotes = [], packFlags = [];
+            const moq = parseFloat(item.moq) || 0, boxQty = parseFloat(item.boxQty) || 0, crateQty = parseFloat(item.crateQty) || 0;
+            let qty = rawNeed;
+            if (moq > 0 && qty < moq) { packNotes.push('Raised to MOQ: ' + moq); packFlags.push('MOQ_APPLIED'); qty = moq; }
+            if (boxQty > 0 && qty > 0) { const r = Math.ceil(qty / boxQty) * boxQty; if (r !== qty) { packNotes.push('Rounded to box ' + boxQty + ': ' + qty.toFixed(0) + ' → ' + r); packFlags.push('BOX_ROUNDED'); qty = r; } }
+            if (crateQty > 0 && qty >= crateQty * 0.75) { const r = Math.ceil(qty / crateQty) * crateQty; if (r !== qty) { packNotes.push('Rounded to crate ' + crateQty + ': ' + qty + ' → ' + r); packFlags.push('CRATE_ROUNDED'); qty = r; } }
+            return { finalQty: Math.ceil(qty), packNotes, packFlags };
+        }
+
+        function _getSupplierConfig(supplierStr) {
+            if (!supplierStr) return null;
+            const upper = String(supplierStr).toUpperCase();
+            for (const cfg of Object.values(SUPPLIER_CONFIG)) { if (cfg.identifiers.some(id => upper.includes(id))) return cfg; }
+            return null;
+        }
+
+        const FLAG_STYLES = {
+            SPIKE_SMOOTHED:  { bg: '#fef3c7', fg: '#92400e' },
+            STALE_PO_RISK:   { bg: '#fee2e2', fg: '#991b1b' },
+            DEADLINE_MISSED: { bg: '#fde8d8', fg: '#7c2d12' },
+            SLOW_MOVER:      { bg: '#f3e8ff', fg: '#6b21a8' },
+            PEAK_SEASON:     { bg: '#dcfce7', fg: '#14532d' },
+            SLOW_SEASON:     { bg: '#e0f2fe', fg: '#0c4a6e' },
+            MOQ_APPLIED:     { bg: '#f0fdf4', fg: '#166534' },
+            BOX_ROUNDED:     { bg: '#f0fdf4', fg: '#166534' },
+            CRATE_ROUNDED:   { bg: '#f0fdf4', fg: '#166534' },
+            BOX_QTY_MISSING: { bg: '#fff7ed', fg: '#9a3412' },
+            EXCEEDS_HISTORY: { bg: '#fee2e2', fg: '#7f1d1d' },
+            SMALL_VS_HISTORY:{ bg: '#fef3c7', fg: '#78350f' },
+            DEFER_CANDIDATE: { bg: '#eff6ff', fg: '#1e40af' },
+            LARGE_ORDER:     { bg: '#fee2e2', fg: '#991b1b' },
+            REVIEW:          { bg: '#f9fafb', fg: '#374151' },
+            DEFAULT:         { bg: '#e5e7eb', fg: '#374151' },
+        };
+
+        function renderRecQtyCell(qty, notes, flags) {
+            const flagBadges = (flags || []).map(f => {
+                const style = FLAG_STYLES[f] || FLAG_STYLES.DEFAULT;
+                return '<span style="background:' + style.bg + ';color:' + style.fg + ';font-size:9px;padding:1px 4px;border-radius:3px;margin-right:2px;">' + f + '</span>';
+            }).join('');
+            const tooltipText = (notes || []).join('\n').replace(/"/g, '&quot;');
+            return '<span title="' + tooltipText + '" style="cursor:help;">' +
+                '<strong>' + (qty > 0 ? qty.toLocaleString() : '—') + '</strong>' +
+                (flagBadges ? '<br><span>' + flagBadges + '</span>' : '') +
+                '</span>';
+        }
+        // ═══════════════════════════════════════════════════════
 
     </script>
 </body>
