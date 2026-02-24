@@ -1447,6 +1447,7 @@
                 poIntelLookup[item] = {
                     poCount: d.orders.length,
                     avgPOQty: orders.length > 0 ? Math.round(orders.reduce((s, q) => s + q, 0) / orders.length) : 0,
+                    recentOrders: orders.slice(-6),
                     topSupplier: topSup,
                     topShipTo: topShipTo
                 };
@@ -2561,7 +2562,21 @@
                         '</div>' +
                         '<div class="intel-section"><div class="intel-section-title">PO History</div>' +
                         '<div class="intel-field"><span class="intel-label">PO Count</span><span class="intel-value">' + (item.poCount || '-') + '</span></div>' +
-                        '<div class="intel-field"><span class="intel-label">Avg PO Qty</span><span class="intel-value">' + (item.avgPOQty || '-') + '</span></div>' +
+                        (function() {
+                            const intel = poIntelLookup[item.item] || {};
+                            const recent = intel.recentOrders || [];
+                            if (recent.length === 0) return '';
+                            const avg = item.avgPOQty || intel.avgPOQty || 0;
+                            let html = '';
+                            recent.forEach(function(qty, i) {
+                                const diff = avg > 0 ? Math.round(((qty - avg) / avg) * 100) : 0;
+                                const diffColor = diff > 15 ? '#51cf66' : diff < -15 ? '#ff6b6b' : '#aaa';
+                                const diffStr = diff !== 0 ? ' <span style="font-size:10px;color:' + diffColor + '">(' + (diff > 0 ? '+' : '') + diff + '%)</span>' : '';
+                                html += '<div class="intel-field"><span class="intel-label" style="color:#888;">PO ' + (i + 1) + '</span><span class="intel-value">' + Math.round(qty).toLocaleString() + diffStr + '</span></div>';
+                            });
+                            html += '<div class="intel-field" style="border-top:1px solid #333;margin-top:4px;padding-top:4px;"><span class="intel-label" style="font-weight:700;">Avg PO Qty</span><span class="intel-value" style="font-weight:700;">' + (avg > 0 ? Math.round(avg).toLocaleString() : '-') + '</span></div>';
+                            return html;
+                        })() +
                         '<div class="intel-field"><span class="intel-label">Last PO Date</span><span class="intel-value">' + (item.lastPODate || '-') + '</span></div>' +
                         '<div class="intel-field"><span class="intel-label">PO Ship-To</span><span class="intel-value">' + (item.poShipTo || '-') + '</span></div>' +
                         '</div>' +
