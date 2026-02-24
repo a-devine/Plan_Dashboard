@@ -2740,8 +2740,16 @@
             // Only persist user-generated data and the processed item array.
             // Lookup tables (supplierMaster, itemMasterLookup, poIntelLookup) are
             // already cached in their own dedicated keys — don't double-store them.
+            // recQtyNotes and recQtyFlags are stripped — they're recalculated on
+            // every upload and can easily exceed quota across 2,300+ items.
+            const slimData = allData.map(function(item) {
+                const d = Object.assign({}, item);
+                delete d.recQtyNotes;
+                delete d.recQtyFlags;
+                return d;
+            });
             const session = {
-                data: allData,
+                data: slimData,
                 notes: itemNotes,
                 status: itemStatus,
                 stockoutNotes: stockoutNotes,
@@ -2794,6 +2802,24 @@
                 // Lookups are stored in their own dedicated cache keys — load from there
                 loadCachedLookups();
                 loadPOSupplierIntelligence();
+                // Recompute recQtyNotes/Flags — stripped from save to save quota
+                const histIntel = buildHistoryIntelMap();
+                allData.forEach(function(item) {
+                    const engineStatus = item.action === 'ORDER' ? 'ORDER NOW' :
+                                         item.action === 'EXPEDITE' ? 'ORDER NOW' :
+                                         item.action === 'REVIEW' ? 'REVIEW' : 'OK';
+                    const res = calculateRecQty({
+                        monthlyDemand: item.monthly || 0, annualUsage: item.annual || 0,
+                        leadTime: item.f4102Leadtime || item.leadtime || 21,
+                        onHand: item.totalOH || 0, openPO: item.openPO || 0,
+                        committed: item.committed || 0, cushion: item.netCoverage,
+                        leadTimeDemand: item.demandThruLT || 0, moq: item.moq || 0,
+                        boxQty: 0, crateQty: 0, supplier: item.supplier || '',
+                        status: engineStatus, itemNumber: item.item, item: item.item
+                    }, histIntel);
+                    item.recQtyNotes = res.notes;
+                    item.recQtyFlags = res.flags;
+                });
                 filteredData = [...allData];
 
                 if (allData.length > 0) {
