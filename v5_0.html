@@ -1726,31 +1726,6 @@
                 else if (netAvailable < 0) action = 'REVIEW';
                 else action = 'NO_ACTION';
 
-                const moq = parseFloat(row['MRQ (Min Release Qty)'] || 0);
-                const engineStatus = action === 'ORDER' ? 'ORDER NOW' :
-                                     action === 'EXPEDITE' ? 'ORDER NOW' :
-                                     action === 'REVIEW' ? 'REVIEW' : 'OK';
-                const recResult = calculateRecQty({
-                    monthlyDemand:  monthly,
-                    annualUsage:    annual,
-                    leadTime:       f4102Leadtime || leadtime,
-                    onHand:         totalOH,
-                    openPO:         openPO,
-                    committed:      committed,
-                    cushion:        netCoverage,
-                    leadTimeDemand: demandThruLT,
-                    moq:            moq,
-                    boxQty:         0,
-                    crateQty:       0,
-                    supplier:       supplier,
-                    status:         engineStatus,
-                    itemNumber:     item,
-                    item:           item
-                }, historyIntel);
-                const recQty      = recResult.qty;
-                const recQtyNotes = recResult.notes;
-                const recQtyFlags = recResult.flags;
-
                 const imData = itemMasterLookup[item] || {};
                 const poData = poIntelLookup[item] || {};
 
@@ -1795,6 +1770,31 @@
                 const abcMargin = row['ABC_Margin'] || imData.abcMargin || '';
                 const abcInventory = row['ABC_Inventory'] || imData.abcInventory || '';
                 const commClass = row['Comm_Class'] || imData.commClass || '';
+
+                const moq = parseFloat(row['MRQ (Min Release Qty)'] || 0);
+                const engineStatus = action === 'ORDER' ? 'ORDER NOW' :
+                                     action === 'EXPEDITE' ? 'ORDER NOW' :
+                                     action === 'REVIEW' ? 'REVIEW' : 'OK';
+                const recResult = calculateRecQty({
+                    monthlyDemand:  monthly,
+                    annualUsage:    annual,
+                    leadTime:       f4102Leadtime || leadtime,
+                    onHand:         totalOH,
+                    openPO:         openPO,
+                    committed:      committed,
+                    cushion:        netCoverage,
+                    leadTimeDemand: demandThruLT,
+                    moq:            moq,
+                    boxQty:         0,
+                    crateQty:       0,
+                    supplier:       supplier,
+                    status:         engineStatus,
+                    itemNumber:     item,
+                    item:           item
+                }, historyIntel);
+                const recQty      = recResult.qty;
+                const recQtyNotes = recResult.notes;
+                const recQtyFlags = recResult.flags;
 
                 return {
                     id: index,
