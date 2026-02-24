@@ -2802,25 +2802,29 @@
                 // Lookups are stored in their own dedicated cache keys — load from there
                 loadCachedLookups();
                 loadPOSupplierIntelligence();
-                // Recompute recQtyNotes/Flags — stripped from save to save quota
-                const histIntel = buildHistoryIntelMap();
-                allData.forEach(function(item) {
-                    const engineStatus = item.action === 'ORDER' ? 'ORDER NOW' :
-                                         item.action === 'EXPEDITE' ? 'ORDER NOW' :
-                                         item.action === 'REVIEW' ? 'REVIEW' : 'OK';
-                    const res = calculateRecQty({
-                        monthlyDemand: item.monthly || 0, annualUsage: item.annual || 0,
-                        leadTime: item.f4102Leadtime || item.leadtime || 21,
-                        onHand: item.totalOH || 0, openPO: item.openPO || 0,
-                        committed: item.committed || 0, cushion: item.netCoverage,
-                        leadTimeDemand: item.demandThruLT || 0, moq: item.moq || 0,
-                        boxQty: 0, crateQty: 0, supplier: item.supplier || '',
-                        status: engineStatus, itemNumber: item.item, item: item.item
-                    }, histIntel);
-                    item.recQtyNotes = res.notes;
-                    item.recQtyFlags = res.flags;
-                });
                 filteredData = [...allData];
+                // Recompute recQtyNotes/Flags after page init — deferred so engine
+                // constants (const SUPPLIER_CONFIG etc.) are out of the TDZ first
+                setTimeout(function() {
+                    const histIntel = buildHistoryIntelMap();
+                    allData.forEach(function(item) {
+                        const engineStatus = item.action === 'ORDER' ? 'ORDER NOW' :
+                                             item.action === 'EXPEDITE' ? 'ORDER NOW' :
+                                             item.action === 'REVIEW' ? 'REVIEW' : 'OK';
+                        const res = calculateRecQty({
+                            monthlyDemand: item.monthly || 0, annualUsage: item.annual || 0,
+                            leadTime: item.f4102Leadtime || item.leadtime || 21,
+                            onHand: item.totalOH || 0, openPO: item.openPO || 0,
+                            committed: item.committed || 0, cushion: item.netCoverage,
+                            leadTimeDemand: item.demandThruLT || 0, moq: item.moq || 0,
+                            boxQty: 0, crateQty: 0, supplier: item.supplier || '',
+                            status: engineStatus, itemNumber: item.item, item: item.item
+                        }, histIntel);
+                        item.recQtyNotes = res.notes;
+                        item.recQtyFlags = res.flags;
+                    });
+                    renderTable();
+                }, 0);
 
                 if (allData.length > 0) {
                     populateFilters();
