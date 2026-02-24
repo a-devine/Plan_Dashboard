@@ -915,6 +915,7 @@
                             <th>Action</th>
                             <th>Rec</th>
                             <th title="Avg quantity from past POs">Avg PO</th>
+                            <th title="Previous 12 months usage">12M</th>
                             <th>Notes</th>
                             <th>Status</th>
                         </tr>
@@ -2028,6 +2029,7 @@
                                 <th>Action</th>
                                 <th>Rec Qty</th>
                                 <th title="Avg quantity from past POs">Avg PO</th>
+                                <th title="Previous 12 months usage">12M</th>
                                 <th>Notes</th>
                                 <th>Status</th>
                             </tr>
@@ -2091,6 +2093,7 @@
                 html += '<td><span class="badge ' + actionBadge + '">' + item.action + '</span></td>';
                 html += '<td>' + renderRecQtyCell(item.recQty, item.recQtyNotes, item.recQtyFlags) + '</td>';
                 html += '<td style="font-size:11px; color:#666;">' + (soAvgPO > 0 ? Math.round(soAvgPO).toLocaleString() : '-') + '</td>';
+                html += '<td style="font-size:11px; color:#aaa;">' + (item.annual > 0 ? Math.round(item.annual).toLocaleString() : '-') + '</td>';
                 html += '<td><input type="text" class="notes-input" value="' + (stockoutNotes[item.id] || '') + '" onchange="saveStockoutNote(' + item.id + ', this.value)" placeholder="Note..."></td>';
                 html += '<td><select class="status-select" onchange="setStockoutStatus(' + item.id + ', this.value)">';
                 html += '<option value="" ' + (status === '' ? 'selected' : '') + '>-</option>';
@@ -2571,6 +2574,7 @@
                     <td><span class="badge ${actionBadge}">${item.action}</span></td>
                     <td>${renderRecQtyCell(item.recQty, item.recQtyNotes, item.recQtyFlags)}</td>
                     <td style="font-size:11px; color:#666;">${avgPODisplay !== '-' ? Math.round(avgPODisplay).toLocaleString() : '-'}</td>
+                    <td style="font-size:11px; color:#aaa;">${item.annual > 0 ? Math.round(item.annual).toLocaleString() : '-'}</td>
                     <td><input type="text" class="notes-input" value="${itemNotes[item.id] || ''}" onchange="saveNote(${item.id}, this.value)" placeholder="Note..."></td>
                     <td>
                         <select class="status-select" onchange="setStatus(${item.id}, this.value)">
@@ -2588,7 +2592,7 @@
                     const detailRow = document.createElement('tr');
                     detailRow.className = 'detail-row';
 
-                    detailRow.innerHTML = '<td colspan="20"><div class="intel-panel"><div class="intel-grid">' +
+                    detailRow.innerHTML = '<td colspan="21"><div class="intel-panel"><div class="intel-grid">' +
                         '<div class="intel-section"><div class="intel-section-title">Net Position</div>' +
                         '<div class="intel-field"><span class="intel-label">OH + OO</span><span class="intel-value">' + (item.totalOH + item.openPO) + '</span></div>' +
                         '<div class="intel-field"><span class="intel-label">Committed</span><span class="intel-value">' + item.committed + '</span></div>' +
