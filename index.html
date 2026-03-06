@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎯 Raynor Planning Intelligence v3.6.1</title>
+    <title>🎯 Raynor Planning Intelligence v3.4</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -534,8 +534,8 @@
     <div class="container">
         <div class="header">
             <div class="header-left">
-                <h1>🎯 Raynor Planning Intelligence<span class="version-badge">v3.6.1 Auto-Cushion</span></h1>
-                <p class="subtitle">Planning Intelligence Windows | Out of Stock | Order Today | Supplier Urgency</p>
+                <h1>🎯 Raynor Planning Intelligence<span class="version-badge">v3.5</span></h1>
+                <p class="subtitle">Rule-Based Order Triggers | Correct Replenishment Qty | Trigger Reason</p>
             </div>
             <div class="header-right">
                 <button class="header-btn btn-upload" onclick="openUploadModal()">📁 Upload</button>
@@ -662,16 +662,17 @@
                             <th>Description</th>
                             <th>Supplier</th>
                             <th>Ship-To</th>
+                            <th>LT</th>
                             <th>ROP</th>
                             <th>OH</th>
                             <th>Avail</th>
                             <th>Open PO</th>
-                            <th>Cushion</th>
                             <th>PO Arrives</th>
                             <th>Days</th>
-                            <th>Conf</th>
                             <th>Action</th>
-                            <th>Rec</th>
+                            <th>Trigger</th>
+                            <th>Pri</th>
+                            <th>Rec Qty</th>
                             <th>Notes</th>
                             <th>Status</th>
                         </tr>
@@ -934,13 +935,47 @@
         function processOpenPOs(data) {
             const lookup = {};
 
-            data.forEach(row => {
-                const item = row['Short Item No'] || row['Item Number'];
-                const qtyOpen = parseFloat(row['Quantity Open'] || 0);
-                const promisedDate = row['Original Promised Date'] || row['Promised Date'];
-                const orderDate = row['Order Date'];
+            console.log('📦 Processing Open PO Data...');
+            console.log('Total PO rows:', data.length);
 
-                if (!item) return;
+            // Debug: Show available column names
+            if (data.length > 0) {
+                console.log('Available columns:', Object.keys(data[0]));
+            }
+
+            let processedCount = 0;
+
+            data.forEach((row, index) => {
+                // Try multiple possible column names for item number
+                const item = row['Short Item No'] ||
+                            row['Item Number'] ||
+                            row['Item'] ||
+                            row['2nd Item Number'] ||
+                            row['Short Item Number'];
+
+                // Try multiple possible column names for quantity
+                const qtyOpen = parseFloat(
+                    row['Quantity Open'] ||
+                    row['Qty Open'] ||
+                    row['Open Quantity'] ||
+                    row['Quantity Remaining'] ||
+                    0
+                );
+
+                // Try multiple possible column names for dates
+                const promisedDate = row['Original Promised Date'] ||
+                                    row['Promised Date'] ||
+                                    row['Promise Date'] ||
+                                    row['Scheduled Ship Date'];
+
+                const orderDate = row['Order Date'] ||
+                                 row['Date Ordered'] ||
+                                 row['PO Date'];
+
+                if (!item) {
+                    console.log(`⚠️ Row ${index}: No item number found`, row);
+                    return;
+                }
 
                 if (!lookup[item]) {
                     lookup[item] = {
@@ -952,6 +987,7 @@
                 }
 
                 lookup[item].totalOpen += qtyOpen;
+                processedCount++;
 
                 if (promisedDate) {
                     const promDate = new Date(promisedDate);
@@ -975,10 +1011,18 @@
                 }
             });
 
+            console.log('✅ Processed PO rows:', processedCount);
+            console.log('Unique items with POs:', Object.keys(lookup).length);
+            console.log('Sample PO data:', Object.entries(lookup).slice(0, 5));
+
             return lookup;
         }
 
         function processBuyingSheet(data, poLookup) {
+            console.log('📊 Processing Buying Sheet...');
+            console.log('Total items:', data.length);
+            console.log('PO lookup has data for:', Object.keys(poLookup).length, 'items');
+
             return data.map((row, index) => {
                 const item = row['Item Number'] || '';
 
@@ -1004,69 +1048,88 @@
                 const annual = parseFloat(row['Previous 12 Mo Usage'] || 0);
                 const leadtime = parseInt(row['Leadtime'] || 14);
 
-                // Calculate cushion: try to read from column, or auto-calculate from components
-                let cushion = parseFloat(row['CUSHION OH+OO-commits-dmdlt'] || row['Cushion'] || 0);
-
-                // Auto-calculate if not provided: OH + OO - commits - demand thru leadtime
-                if (cushion === 0) {
-                    const daily = monthly / 30.4;
-                    const dmdThruLT = parseFloat(row['Dmd thru Leadtime'] || row['Avg Dmd thru Leadtime'] || (daily * leadtime));
-                    cushion = totalOH + openPO - committed - dmdThruLT;
-                }
-
                 const daily = monthly / 30.4;
                 const ltd = daily * leadtime;
                 const netCov = totalOH + openPO - committed;
                 const daysSupply = daily > 0 ? Math.floor(netCov / daily) : 999;
 
-                let conf = 0;
-                if (available < 0) conf += 20;
-                if (totalOH < rop) conf += 15;
-                if (netCov < ltd) conf += 25;
-                if (openPO === 0 && netCov < 0) conf += 20;
-
-                // Cushion-based priority (20-day standard)
-                const cushionDays = daily > 0 ? cushion / daily : 999;
-                if (cushion < 0 && openPO === 0) conf += 25; // CRITICAL: negative cushion, no PO
-                else if (cushion < 0) conf += 15; // HIGH: negative cushion
-                else if (cushionDays < 20) conf += 10; // Below 20-day standard
-
-                const avgMonthly = annual / 12;
-                if (monthly > avgMonthly * 1.5) conf += 15;
-                else if (monthly > avgMonthly * 0.8) conf += 5;
-
+                // ── PO intelligence ──────────────────────────────────────────
                 const poInfo = poLookup[item];
                 let poArrives = '';
+                let pastDueFlag = false;
+                let staleFlag = false;
                 if (poInfo) {
+                    if (index < 5) console.log(`✅ PO Match for ${item}:`, poInfo);
                     if (poInfo.earliestDate) {
                         const date = new Date(poInfo.earliestDate);
                         poArrives = date.toLocaleDateString();
-                        if (poInfo.pastDue) {
-                            poArrives += ' ⚠️';
-                            conf += 10;
-                        }
+                        if (poInfo.pastDue) { poArrives += ' ⚠️'; pastDueFlag = true; }
                     }
-                    if (poInfo.stale) {
-                        conf += 5;
-                    }
+                    if (poInfo.stale) staleFlag = true;
+                } else if (openPO > 0 && index < 5) {
+                    console.log(`⚠️ No PO detail for ${item} (Buying sheet shows ${openPO} on PO)`);
                 }
 
-                conf = Math.max(0, Math.min(100, conf));
+                // ── Rule-based order triggers ─────────────────────────────────
+                // ROP already encodes: Daily Demand × Lead Time + Safety Stock
+                // Any one trigger = ORDER. Priority sorter is confidence below.
+                const triggers = [];
+                const atOrBelowROP  = rop > 0 && totalOH <= rop;
+                const negAvail      = available < 0;
+                const negNetCov     = netCov < 0;
+                const insideLTD     = netCov >= 0 && netCov < ltd;  // within LT window
+                const jdeOrderFlag  = !!(row['Order Flag'] || row['Planning Code'] || row['Order Policy']);
+
+                if (atOrBelowROP)  triggers.push('Below ROP');
+                if (negAvail)      triggers.push('Neg Available');
+                if (negNetCov)     triggers.push('Neg Net Cov');
+                if (jdeOrderFlag)  triggers.push('JDE Flag');
+                if (pastDueFlag)   triggers.push('PO Past Due');
 
                 let action;
-                if (conf >= 70) action = 'ORDER';
-                else if (conf >= 60) action = 'REVIEW';
-                else if (conf >= 40 && openPO > 0) action = 'EXPEDITE';
-                else action = 'NO_ACTION';
+                if (triggers.length > 0) {
+                    action = 'ORDER';
+                } else if (insideLTD) {
+                    action = 'REVIEW';
+                    triggers.push('Inside LT Window');
+                } else if (openPO > 0 && staleFlag) {
+                    action = 'EXPEDITE';
+                    triggers.push('Stale PO');
+                } else {
+                    action = 'NO_ACTION';
+                }
 
+                // ── Confidence = priority sorter within ORDER items ───────────
+                // Higher = more urgent. Not a gate — just a rank.
+                let conf = 0;
+                if (negAvail)    conf += 35;   // Already oversold — most critical
+                if (negNetCov)   conf += 30;   // Net position is underwater
+                if (atOrBelowROP) conf += 20;  // At/below reorder point
+                if (insideLTD && action !== 'ORDER') conf += 15;  // Approaching
+                if (pastDueFlag) conf += 10;
+                if (staleFlag)   conf += 5;
+
+                // Velocity weight: fast movers need faster action
+                const avgMonthly = annual > 0 ? annual / 12 : monthly;
+                if (avgMonthly > 0) {
+                    const velocityRatio = monthly / avgMonthly;
+                    if (velocityRatio > 1.3) conf += 10;  // Accelerating demand
+                }
+                conf = Math.max(0, Math.min(100, conf));
+
+                // ── Replenishment quantity ────────────────────────────────────
+                // Safety Stock is implied: SS = ROP − (Daily × LT)
+                // Target Level = ROP + (Daily × LT)
+                //   = "above ROP by one full lead time demand"
+                //   = enough to cover: this LT + have SS left over + cover next cycle
+                const moq = parseFloat(row['MRQ (Min Release Qty)'] || row['Min Order Qty'] || 0);
                 let recQty = 0;
                 if (action === 'ORDER' || action === 'REVIEW') {
-                    const target = ltd * 1.1;
-                    recQty = Math.max(0, target - netCov);
-                    const moq = parseFloat(row['MRQ (Min Release Qty)'] || 0);
-                    if (moq > 0 && recQty > 0) {
-                        recQty = Math.ceil(recQty / moq) * moq;
-                    }
+                    const impliedSS = Math.max(0, rop - ltd);
+                    const targetLevel = rop + ltd;  // ROP + one LT demand buffer
+                    recQty = Math.max(0, targetLevel - netCov);
+                    if (moq > 0 && recQty > 0) recQty = Math.ceil(recQty / moq) * moq;
+                    else if (recQty > 0) recQty = Math.ceil(recQty);
                 }
 
                 return {
@@ -1080,11 +1143,11 @@
                     totalOH: Math.floor(totalOH),
                     available: Math.floor(available),
                     openPO: Math.floor(openPO),
-                    cushion: Math.floor(cushion),
                     poArrives: poArrives,
-                    pastDue: poInfo?.pastDue || false,
-                    stale: poInfo?.stale || false,
+                    pastDue: pastDueFlag,
+                    stale: staleFlag,
                     daysSupply: daysSupply < 999 ? daysSupply : '999+',
+                    triggerReason: triggers.join(' | ') || '—',
                     confidence: Math.floor(conf),
                     action: action,
                     recQty: Math.floor(recQty),
@@ -1533,7 +1596,6 @@
                                    item.action === 'EXPEDITE' ? 'badge-info' : 'badge-secondary';
 
                 const ropClass = item.totalOH < item.rop ? 'text-danger' : '';
-                const cushionClass = item.cushion < 0 ? 'text-danger' : '';
                 const poArrivesClass = item.pastDue ? 'past-due' : 'po-info';
 
                 row.innerHTML = `
@@ -1542,16 +1604,17 @@
                     <td>${item.description}</td>
                     <td>${item.supplier}</td>
                     <td>${item.shipTo}</td>
+                    <td>${item.leadtime}</td>
                     <td class="${ropClass}">${item.rop}</td>
                     <td class="${ropClass}">${item.totalOH}</td>
                     <td>${item.available}</td>
                     <td>${item.openPO}</td>
-                    <td class="${cushionClass}" style="font-weight: 600;">${item.cushion}</td>
                     <td class="${poArrivesClass}">${item.poArrives || '-'}</td>
                     <td>${item.daysSupply}</td>
-                    <td><span class="badge ${actionBadge}">${item.confidence}</span></td>
                     <td><span class="badge ${actionBadge}">${item.action}</span></td>
-                    <td><strong>${item.recQty > 0 ? item.recQty : '-'}</strong></td>
+                    <td style="font-size:11px;color:#555;">${item.triggerReason}</td>
+                    <td><span class="badge ${item.confidence >= 60 ? 'badge-danger' : item.confidence >= 30 ? 'badge-warning' : 'badge-secondary'}">${item.confidence}</span></td>
+                    <td><strong>${item.recQty > 0 ? item.recQty.toLocaleString() : '-'}</strong></td>
                     <td><input type="text" class="notes-input" value="${itemNotes[item.id] || ''}" onchange="saveNote(${item.id}, this.value)" placeholder="Note..."></td>
                     <td>
                         <select class="status-select" onchange="setStatus(${item.id}, this.value)">
@@ -1801,6 +1864,7 @@
                 'Supplier Code': item.supplierCode,
                 'Supplier Name': item.supplier,
                 'Ship To': item.shipTo,
+                'Lead Time': item.leadtime,
                 'Reorder Point': item.rop,
                 'On Hand': item.totalOH,
                 'Available': item.available,
@@ -1809,6 +1873,8 @@
                 'Days Supply': item.daysSupply,
                 'Confidence': item.confidence,
                 'Action': item.action,
+                'Trigger Reason': item.triggerReason,
+                'Priority Score': item.confidence,
                 'Recommended Qty': item.recQty,
                 'Notes': itemNotes[item.id] || '',
                 'Status': itemStatus[item.id] || ''
