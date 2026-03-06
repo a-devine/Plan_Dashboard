@@ -1713,7 +1713,7 @@
                 const jdeOrderFlag  = !!(row['Order Flag'] || row['Planning Code'] || row['Order Policy']);
                 const pastDueFlag   = poInfo?.pastDue || false;
                 // Gap 2: ROP = 0 or 1 = unmaintained — use days-of-supply vs lead time as backstop
-                const daysSupply    = daily > 0 ? netAvailable / daily : 9999;
+                // (daysSupply already declared above at line 1694)
                 const lowStockNoROP = rop <= 1 && daily > 0 && daysSupply < leadtime;
 
                 if (atOrBelowROP)   triggers.push('Below ROP');
